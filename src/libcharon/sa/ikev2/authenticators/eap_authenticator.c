@@ -129,38 +129,6 @@ static eap_method_t *load_method(private_eap_authenticator_t *this,
 	{
 		server = this->ike_sa->get_other_id(this->ike_sa);
 		peer = this->ike_sa->get_my_id(this->ike_sa);
-#ifdef VOWIFI_CFG
-		if (peer->get_type(peer) == ID_RFC822_ADDR)
-		{
-			chunk_t id = peer->get_encoding(peer);
-			DBG1(DBG_IKE, "Current authentication ID: %s", id.ptr);
-			if (strchr(id.ptr, '-') != NULL)
-			{
-				char output[id.len];
-				unsigned char* delim;
-				int ofs = 0;
-
-				memset(output, 0, id.len);
-				delim = strchr(id.ptr, '@');
-				if (delim)
-				{
-					int len = delim - id.ptr + 1;
-					memcpy(output, id.ptr, len);
-					ofs += len;
-				}
-				delim = strchr(id.ptr, ':');
-				if (delim)
-				{
-					int len = (id.ptr + id.len) - (++delim);
-					memcpy(output + ofs, delim, len);
-
-					DBG1(DBG_IKE, "New authentication ID: %s", output);
-
-					peer = identification_create_from_string(output);
-				}
-			}
-		}
-#endif
 		auth = this->ike_sa->get_auth_cfg(this->ike_sa, TRUE);
 	}
 	if (this->eap_identity)
@@ -457,6 +425,14 @@ static eap_payload_t* client_process_eap(private_eap_authenticator_t *this,
 			return eap_payload_create_nak(in->get_identifier(in), conf_type,
 										  conf_vendor, in->is_expanded(in));
 		}
+#ifdef VOWIFI_CFG
+		id = auth->get(auth, AUTH_RULE_EAP_IDENTITY);
+		if ((id != NULL) && (id->get_type(id) != ID_ANY))
+		{
+			DESTROY_IF(this->eap_identity);
+			this->eap_identity = id->clone(id);
+		}
+#endif
 		this->method = load_method(this, type, vendor, EAP_PEER);
 		if (!this->method)
 		{
