@@ -213,6 +213,16 @@ struct private_peer_cfg_t {
 
 	/** Rekey on roaming preference flag */
 	int rekey_pref;
+
+	/** Retransmit parameters */
+	double retransmit_timeout;
+	double retransmit_base;
+	int retransmit_retries;
+
+	/** Handover retransmit parameters */
+	double retransmit_timeout_handover;
+	double retransmit_base_handover;
+	int retransmit_retries_handover;
 #endif
 };
 
@@ -845,6 +855,78 @@ METHOD(peer_cfg_t, get_do_rekey_on_roam, int,
 {
 	return this->rekey_pref;
 }
+
+METHOD(peer_cfg_t, set_retransmit_timeout, void,
+	private_peer_cfg_t *this, float timeout)
+{
+	this->retransmit_timeout = (double)timeout;
+}
+
+METHOD(peer_cfg_t, get_retransmit_timeout, double,
+	private_peer_cfg_t *this)
+{
+	return this->retransmit_timeout;
+}
+
+METHOD(peer_cfg_t, set_retransmit_base, void,
+	private_peer_cfg_t *this, float base)
+{
+	this->retransmit_base = (double)base;
+}
+
+METHOD(peer_cfg_t, get_retransmit_base, double,
+	private_peer_cfg_t *this)
+{
+	return this->retransmit_base;
+}
+
+METHOD(peer_cfg_t, set_retransmit_retries, void,
+	private_peer_cfg_t *this, int count)
+{
+	this->retransmit_retries = count;
+}
+
+METHOD(peer_cfg_t, get_retransmit_retries, int,
+	private_peer_cfg_t *this)
+{
+	return this->retransmit_retries;
+}
+
+METHOD(peer_cfg_t, set_retransmit_timeout_handover, void,
+	private_peer_cfg_t *this, float timeout)
+{
+	this->retransmit_timeout_handover = (double)timeout;
+}
+
+METHOD(peer_cfg_t, get_retransmit_timeout_handover, double,
+	private_peer_cfg_t *this)
+{
+	return this->retransmit_timeout_handover;
+}
+
+METHOD(peer_cfg_t, set_retransmit_base_handover, void,
+	private_peer_cfg_t *this, float base)
+{
+	this->retransmit_base_handover = (double)base;
+}
+
+METHOD(peer_cfg_t, get_retransmit_base_handover, double,
+	private_peer_cfg_t *this)
+{
+	return this->retransmit_base_handover;
+}
+
+METHOD(peer_cfg_t, set_retransmit_retries_handover, void,
+	private_peer_cfg_t *this, int count)
+{
+	this->retransmit_retries_handover = count;
+}
+
+METHOD(peer_cfg_t, get_retransmit_retries_handover, int,
+	private_peer_cfg_t *this)
+{
+	return this->retransmit_retries_handover;
+}
 #endif
 
 METHOD(peer_cfg_t, destroy, void,
@@ -939,6 +1021,18 @@ peer_cfg_t *peer_cfg_create(char *name, ike_cfg_t *ike_cfg,
 			.get_interface = _get_interface_name,
 			.set_do_rekey_on_roam = _set_do_rekey_on_roam,
 			.is_rekey_preferred = _get_do_rekey_on_roam,
+			.set_retransmit_timeout = _set_retransmit_timeout,
+			.get_retransmit_timeout = _get_retransmit_timeout,
+			.set_retransmit_base = _set_retransmit_base,
+			.get_retransmit_base = _get_retransmit_base,
+			.set_retransmit_retries = _set_retransmit_retries,
+			.get_retransmit_retries = _get_retransmit_retries,
+			.set_retransmit_timeout_handover = _set_retransmit_timeout_handover,
+			.get_retransmit_timeout_handover = _get_retransmit_timeout_handover,
+			.set_retransmit_base_handover = _set_retransmit_base_handover,
+			.get_retransmit_base_handover = _get_retransmit_base_handover,
+			.set_retransmit_retries_handover = _set_retransmit_retries_handover,
+			.get_retransmit_retries_handover = _get_retransmit_retries_handover,
 #endif
 #ifdef ME
 			.is_mediation = _is_mediation,

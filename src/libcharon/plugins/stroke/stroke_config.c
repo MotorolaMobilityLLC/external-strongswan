@@ -900,6 +900,12 @@ static peer_cfg_t *build_peer_cfg(private_stroke_config_t *this,
 	peer_cfg->set_handover(peer_cfg, handover);
 	peer_cfg->set_use_original_ts(peer_cfg, msg->add_conn.options & OPT_USE_ORIGINAL_TS);
 	peer_cfg->set_do_rekey_on_roam(peer_cfg, msg->add_conn.options & OPT_DO_REKEY_ON_ROAM);
+	peer_cfg->set_retransmit_timeout(peer_cfg, msg->add_conn.retransmit.timeout);
+	peer_cfg->set_retransmit_base(peer_cfg, msg->add_conn.retransmit.base);
+	peer_cfg->set_retransmit_retries(peer_cfg, msg->add_conn.retransmit.tries);
+	peer_cfg->set_retransmit_timeout_handover(peer_cfg, msg->add_conn.retransmit_handover.timeout);
+	peer_cfg->set_retransmit_base_handover(peer_cfg, msg->add_conn.retransmit_handover.base);
+	peer_cfg->set_retransmit_retries_handover(peer_cfg, msg->add_conn.retransmit_handover.tries);
 #endif
 	return peer_cfg;
 }

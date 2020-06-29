@@ -446,6 +446,26 @@ struct peer_cfg_t {
 	* Get rekey preferred flag
 	*/
 	int (*is_rekey_preferred)(peer_cfg_t *this);
+
+	/**
+	* Set retransmit parameters
+	*/
+	void (*set_retransmit_timeout)(peer_cfg_t *this, float timeout);
+	void (*set_retransmit_base)(peer_cfg_t *this, float base);
+	void (*set_retransmit_retries)(peer_cfg_t *this, int count);
+	void (*set_retransmit_timeout_handover)(peer_cfg_t *this, float timeout);
+	void (*set_retransmit_base_handover)(peer_cfg_t *this, float base);
+	void (*set_retransmit_retries_handover)(peer_cfg_t *this, int count);
+
+	/**
+	* Get retransmit parameters
+	*/
+	double (*get_retransmit_timeout)(peer_cfg_t *this);
+	double (*get_retransmit_base)(peer_cfg_t *this);
+	int (*get_retransmit_retries)(peer_cfg_t *this);
+	double (*get_retransmit_timeout_handover)(peer_cfg_t *this);
+	double (*get_retransmit_base_handover)(peer_cfg_t *this);
+	int (*get_retransmit_retries_handover)(peer_cfg_t *this);
 #endif
 };
 

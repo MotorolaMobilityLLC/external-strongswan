@@ -145,6 +145,7 @@ struct private_task_manager_t {
 	 */
 	bool reset;
 
+#ifndef VOWIFI_CFG
 	/**
 	 * Number of times we retransmit messages before giving up
 	 */
@@ -169,6 +170,7 @@ struct private_task_manager_t {
 	 * Limit retransmit timeout to this value
 	 */
 	uint32_t retransmit_limit;
+#endif
 
 	/**
 	 * Use make-before-break instead of break-before-make reauth?
@@ -358,26 +360,38 @@ METHOD(task_manager_t, retransmit, status_t,
 		if (!mobike || !mobike->is_probing(mobike))
 		{
 #ifdef VOWIFI_CFG
+			double retransmit_timeout = RETRANSMIT_TIMEOUT;
 			double base = RETRANSMIT_BASE;
-			u_int  max_tries = RETRANSMIT_TRIES;
+			u_int max_tries = RETRANSMIT_TRIES;
 
-			if (this->ike_sa->is_handover(this->ike_sa))
+			peer_cfg_t *peer_cfg = this->ike_sa->get_peer_cfg(this->ike_sa);
+			if (peer_cfg)
 			{
-				base = HO_RETRANSMIT_BASE;
-				max_tries = HO_RETRANSMIT_TRIES;
+				if (this->ike_sa->is_handover(this->ike_sa))
+				{
+					retransmit_timeout = peer_cfg->get_retransmit_timeout_handover(peer_cfg);
+					base = peer_cfg->get_retransmit_base_handover(peer_cfg);
+					max_tries = peer_cfg->get_retransmit_retries_handover(peer_cfg);
+				}
+				else
+				{
+					retransmit_timeout = peer_cfg->get_retransmit_timeout(peer_cfg);
+					base = peer_cfg->get_retransmit_base(peer_cfg);
+					max_tries = peer_cfg->get_retransmit_retries(peer_cfg);
+				}
 			}
 			DBG1(DBG_IKE, "Retries: %d, range: %d\n", this->initiating.retransmitted, max_tries);
 
 			if (this->initiating.retransmitted <= max_tries)
 			{
-				timeout = (u_int32_t)(this->retransmit_timeout * 1000.0 *
+				timeout = (u_int32_t)(retransmit_timeout * 1000.0 *
 					pow(base, this->initiating.retransmitted));
+			}
 #else
 			if (this->initiating.retransmitted <= this->retransmit_tries)
 			{
 				timeout = (uint32_t)(this->retransmit_timeout * 1000.0 *
 					pow(this->retransmit_base, this->initiating.retransmitted));
-#endif
 				if (this->retransmit_limit)
 				{
 					timeout = min(timeout, this->retransmit_limit);
@@ -388,6 +402,7 @@ METHOD(task_manager_t, retransmit, status_t,
 					timeout -= max_jitter * (random() / (RAND_MAX + 1.0));
 				}
 			}
+#endif
 			else
 			{
 				DBG1(DBG_IKE, "giving up after %d retransmits",
@@ -418,7 +433,7 @@ METHOD(task_manager_t, retransmit, status_t,
 						 "deferred");
 #ifdef VOWIFI_CFG
 					/* do not try to wait next attempt if we are already done and all failed */
-					if (this->initiating.retransmitted >= this->retransmit_tries)
+					if (this->initiating.retransmitted >= max_tries)
 					{
 						DBG1(DBG_IKE, "giving up after %d retransmits",
 					 		this->initiating.retransmitted);
@@ -2384,6 +2399,7 @@ task_manager_v2_t *task_manager_v2_create(ike_sa_t *ike_sa)
 		.queued_tasks = array_create(0, 0),
 		.active_tasks = array_create(0, 0),
 		.passive_tasks = array_create(0, 0),
+#ifndef VOWIFI_CFG
 		.retransmit_tries = lib->settings->get_int(lib->settings,
 					"%s.retransmit_tries", RETRANSMIT_TRIES, lib->ns),
 		.retransmit_timeout = lib->settings->get_double(lib->settings,
@@ -2394,6 +2410,7 @@ task_manager_v2_t *task_manager_v2_create(ike_sa_t *ike_sa)
 					"%s.retransmit_jitter", 0, lib->ns), RETRANSMIT_JITTER_MAX),
 		.retransmit_limit = lib->settings->get_int(lib->settings,
 					"%s.retransmit_limit", 0, lib->ns) * 1000,
+#endif
 		.make_before_break = lib->settings->get_bool(lib->settings,
 					"%s.make_before_break", FALSE, lib->ns),
 	);

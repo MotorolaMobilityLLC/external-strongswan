@@ -35,31 +35,18 @@ typedef enum task_queue_t task_queue_t;
 /**
  * First retransmit timeout in seconds.
  */
-#ifdef VOWIFI_CFG
-#define RETRANSMIT_TIMEOUT 1.0
-#else
 #define RETRANSMIT_TIMEOUT 4.0
-#endif
 
 /**
  * Base which is raised to the power of the retransmission try.
  */
-#ifdef VOWIFI_CFG
-#define RETRANSMIT_BASE 2.0
-#define HO_RETRANSMIT_BASE 1.0
-#else
 #define RETRANSMIT_BASE 1.8
-#endif
 
 /**
  * Number of retransmits done before giving up.
  */
-#ifdef VOWIFI_CFG
-#define RETRANSMIT_TRIES 3
-#define HO_RETRANSMIT_TRIES 1
-#else
 #define RETRANSMIT_TRIES 5
-#endif
+
 /**
  * Maximum jitter in percent.
  */

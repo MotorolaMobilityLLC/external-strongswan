@@ -322,6 +322,11 @@ struct stroke_msg_t {
 			operator_type_t opr_type;
 			char *pcscf;
 			char *imei;
+			struct {
+				float timeout;
+				float base;
+				int tries;
+			} retransmit, retransmit_handover;
 			int keepalive_interval;
 
 #define OPT_USE_ORIGINAL_TS	0x00000001
