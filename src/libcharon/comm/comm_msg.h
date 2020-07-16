@@ -43,6 +43,9 @@ typedef enum {
 
     	/* DELETE ROUTE */
     	RES_DEL_ROUTE,
+
+	/* set interface response */
+	RES_SET_INTERFACE,
 } charon_response_type_t;
 
 #define AKA_RAND_LEN	16

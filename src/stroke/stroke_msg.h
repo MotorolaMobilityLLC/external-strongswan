@@ -29,7 +29,7 @@
 /**
  * Number of bytes by which the buffer is increased as needed
  */
-#define STROKE_BUF_LEN_INC     1024
+#define STROKE_BUF_LEN_INC	   1024
 
 #ifdef VOWIFI_CFG
 typedef enum {
@@ -236,10 +236,12 @@ struct stroke_msg_t {
 		/* print/reset counters */
 		STR_COUNTERS,
 #ifdef VOWIFI_CFG
-        	/* ADD route */
-                STR_ADD_ROUTE,
-        	/* DELETE route */
-                STR_DEL_ROUTE,
+		/* ADD route */
+		STR_ADD_ROUTE,
+		/* DELETE route */
+		STR_DEL_ROUTE,
+		/* set new interface */
+		STR_SET_INTERFACE,
 #endif
 		/* more to come */
 	} type;
@@ -400,12 +402,18 @@ struct stroke_msg_t {
 		} counters;
 
 #ifdef VOWIFI_CFG
-        	/* data for STR_ADD_ROUTE, STR_DEL_ROUTE */
-        	struct {
-            		char *src;
-            		char *dst;
-            		char *interface;
-        	} add_route, del_route;
+		/* data for STR_ADD_ROUTE, STR_DEL_ROUTE */
+		struct {
+			char *src;
+			char *dst;
+			char *interface;
+		} add_route, del_route;
+
+		/* data for STR_SET_INTERFACE */
+		struct {
+			char *name;
+			char *interface;
+		} set_interface;
 #endif
 	};
 #ifdef VOWIFI_CFG

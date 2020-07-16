@@ -674,6 +674,36 @@ static void stroke_del_route(private_stroke_socket_t *this, stroke_msg_t *msg, F
 
 	charon_send_route_response(RES_DEL_ROUTE, msg);
 }
+
+static void stroke_set_interface(private_stroke_socket_t *this, stroke_msg_t *msg, FILE *out)
+{
+	enumerator_t *enumerator;
+	ike_sa_t *ike_sa;
+
+	pop_string(msg, &msg->set_interface.name);
+	pop_string(msg, &msg->set_interface.interface);
+	DBG1(DBG_CFG,"received stroke: set new interface for %s to %s\n", msg->set_interface.name, msg->set_interface.interface);
+
+	enumerator = charon->ike_sa_manager->create_enumerator(charon->ike_sa_manager, TRUE);
+	while (enumerator->enumerate(enumerator, &ike_sa))
+	{
+		if (streq(msg->set_interface.name, ike_sa->get_name(ike_sa)))
+		{
+			peer_cfg_t *peer_cfg = ike_sa->get_peer_cfg(ike_sa);
+			if (peer_cfg)
+			{
+				/* first, update interface */
+				peer_cfg->set_interface(peer_cfg, msg->set_interface.interface);
+
+				/* start roaming scenario */
+				ike_sa->roam(ike_sa, FALSE);
+			}
+		}
+	}
+	enumerator->destroy(enumerator);
+
+	charon_send_conn_response(RES_SET_INTERFACE, msg);
+}
 #endif
 
 /**
@@ -816,6 +846,9 @@ static bool on_accept(private_stroke_socket_t *this, stream_t *stream)
 			break;
 		case STR_DEL_ROUTE:
 			stroke_del_route(this, msg, out);
+			break;
+		case STR_SET_INTERFACE:
+			stroke_set_interface(this, msg, out);
 			break;
 #endif
 		default:
