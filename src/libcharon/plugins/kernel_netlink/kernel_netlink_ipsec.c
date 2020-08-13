@@ -3639,7 +3639,11 @@ kernel_netlink_ipsec_t *kernel_netlink_ipsec_create()
 		.policy_update = lib->settings->get_bool(lib->settings,
 					"%s.plugins.kernel-netlink.policy_update", FALSE, lib->ns),
 		.install_routes = lib->settings->get_bool(lib->settings,
+#ifndef VOWIFI_CFG
 							"%s.install_routes", TRUE, lib->ns),
+#else
+							"%s.install_routes", FALSE, lib->ns),
+#endif
 		.proto_port_transport = lib->settings->get_bool(lib->settings,
 						"%s.plugins.kernel-netlink.set_proto_port_transport_sa",
 						FALSE, lib->ns),
