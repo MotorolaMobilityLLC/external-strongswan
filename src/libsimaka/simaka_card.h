@@ -126,11 +126,29 @@ struct simaka_card_t {
 									char mk[HASH_SIZE_SHA1], uint16_t *counter);
 #ifdef VOWIFI_CFG
 	/**
-	* Provide IKE SA name to card
-	*
-	* Required for multi-SIM authentication
-	*/
-	void (*set_sa_name)(simaka_card_t *this, char *name);
+	 * Calculate CK/IK/RES from RAND/AUTN for AKA authentication.
+	 *
+	 * If the received sequence number (in autn) is out of sync, INVALID_STATE
+	 * is returned.
+	 * The RES value is the only one with variable length. Pass a buffer
+	 * of at least AKA_RES_MAX, the actual number of bytes is written to the
+	 * res_len value. While the standard would allow any bit length between
+	 * 32 and 128 bits, we support only full bytes for now.
+	 *
+	 * @param id		permanent identity to request quintuplet for
+	 * @param rand		random value rand
+	 * @param autn		authentication token autn
+	 * @param ck		buffer receiving encryption key ck
+	 * @param ik		buffer receiving integrity key ik
+	 * @param res		buffer receiving authentication result res
+	 * @param res_len	number of bytes written to res buffer
+	 * @param name		IKE_SA name
+	 * @return			SUCCESS, FAILED, or INVALID_STATE if out of sync
+	 */
+	status_t (*get_quintuplet2)(simaka_card_t *this, identification_t *id,
+							   char rand[AKA_RAND_LEN], char autn[AKA_AUTN_LEN],
+							   char ck[AKA_CK_LEN], char ik[AKA_IK_LEN],
+							   char res[AKA_RES_MAX], int *res_len, char *sa_name);
 #endif
 };
 

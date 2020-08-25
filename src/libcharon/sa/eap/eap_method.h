@@ -149,11 +149,21 @@ struct eap_method_t {
 	auth_cfg_t* (*get_auth)(eap_method_t *this);
 #ifdef VOWIFI_CFG
 	/**
-	* Provide IKE SA name to authenticator
-	*
-	* Required to send challenge to correct SIM slot
-	*/
-	void (*set_sa_name) (eap_method_t *this, char *name);
+	 * Process a received EAP message.
+	 *
+	 * A eap_payload is created in "out" if result is NEED_MORE.
+	 *
+	 * @param in		eap_payload response received
+	 * @param out		created eap_payload to send
+	 * @param sa_name	IKE_SA name
+	 * @return
+	 * 					- NEED_MORE, if an other exchange is required
+	 * 					- FAILED, if EAP method failed
+	 * 					- SUCCESS, if EAP method succeeded
+	 */
+	status_t (*process2) (eap_method_t *this, eap_payload_t *in,
+						 eap_payload_t **out,
+						char *sa_name);
 #endif
 
 	/**

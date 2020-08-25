@@ -125,11 +125,17 @@ METHOD(simaka_manager_t, card_get_quintuplet, status_t,
 	while (enumerator->enumerate(enumerator, &card))
 	{
 #ifdef VOWIFI_CFG
-		if (card->set_sa_name) {
-			card->set_sa_name(card, sa_name);
+		if (card->get_quintuplet2)
+		{
+			status = card->get_quintuplet2(card, id, rand, autn, ck, ik, res, res_len, sa_name);
 		}
-#endif
+		else
+		{
+			status = card->get_quintuplet(card, id, rand, autn, ck, ik, res, res_len);
+		}
+#else
 		status = card->get_quintuplet(card, id, rand, autn, ck, ik, res, res_len);
+#endif
 		switch (status)
 		{	/* try next on error, but not on INVALID_STATE */
 			case SUCCESS:

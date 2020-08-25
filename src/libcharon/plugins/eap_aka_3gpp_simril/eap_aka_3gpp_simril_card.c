@@ -35,52 +35,38 @@ struct private_eap_aka_3gpp_simril_card_t {
 	 * Public eap_aka_3gpp_simril_card_t interface.
 	 */
 	eap_aka_3gpp_simril_card_t public;
-
-	char* sa_name;
 };
 
 METHOD(simaka_card_t, get_quintuplet, status_t,
 	private_eap_aka_3gpp_simril_card_t *this, identification_t *id,
 	char rand[AKA_RAND_LEN], char autn[AKA_AUTN_LEN], char ck[AKA_CK_LEN],
-	char ik[AKA_IK_LEN], char res[AKA_RES_MAX], int *res_len)
+	char ik[AKA_IK_LEN], char res[AKA_RES_MAX], int *res_len, char *sa_name)
 {
 	sim_auth_resp_code_t status = AUTH_FAILURE;
 	int ret;
 
-	DBG1(DBG_IKE, "WRAPPER: received RAND %b", rand, AKA_RAND_LEN);
-	DBG1(DBG_IKE, "WRAPPER: received AUTN %b", autn, AKA_AUTN_LEN);
 
-	ret = charon_process_sim_auth(this->sa_name, rand, autn, ck, ik, res, res_len, &status);
-	if (ret == SUCCESS)
+	DBG1(DBG_IKE, "3gpp_simril_card get_quintuplet for %s", sa_name);
+	ret = charon_process_sim_auth(sa_name, rand, autn, ck, ik, res, res_len, &status);
+    if (ret != SUCCESS)
 	{
-		DBG1(DBG_IKE, "[WRAPPER]: Response received from SIM: res_len: %d \n",*res_len);
-		DBG1(DBG_IKE, "computed Status %d", status);
-		DBG1(DBG_IKE, "computed RES %b", res, AKA_RES_MAX);
-		DBG1(DBG_IKE, "computed CK %b", ck, AKA_CK_LEN);
-		DBG1(DBG_IKE, "computed IK %b", ik, AKA_IK_LEN);
-	}
-	else
-	{
-		DBG1(DBG_IKE, "[WRAPPER]: send_ril_sim_handler() API returned failure\n");
+		DBG1(DBG_IKE, "3gpp_simril_card send_ril_sim_handler failed");
 		return FAILED;
 	}
 
-	/* Handling Respose Code Received from Sim Auth API */
-	switch (status)
+	DBG1(DBG_IKE, "3gpp_simril_card response status = %d, %d length", status, *res_len);
+	switch(status)
 	{
 		case AUTH_SUCCESS:
-    	    		DBG1(DBG_IKE, "[WRAPPER] get_quintuplet: CK, IK and RES generated Successfully \n");
 			return SUCCESS;
-		case AUTH_FAILURE:
-        		DBG1(DBG_IKE,  "[WRAPPER] get_quintuplet: Error occoured!! \n");
-			return FAILED;
 		case AUTH_SYNC_FAIL:
-        		DBG1(DBG_IKE, "[wrapper] get_quintuplet: Synch Failure... Overwriting RAND value with RES value \n");
-			memset(rand,0x00,AKA_RAND_LEN);
-			memcpy(rand,res,AKA_RES_MAX);
+        		DBG1(DBG_IKE, "3gpp_simril_card get_quintuplet: sync failure, overwrite RAND");
+			memset(rand, 0x00, AKA_RAND_LEN);
+			memcpy(rand, res, AKA_RES_MAX);
 			return INVALID_STATE;
+		case AUTH_FAILURE:
 		default:
-        		DBG1(DBG_IKE,  "[WRAPPER] get_quintuplet: Default case. Returning failure. \n");
+        		DBG1(DBG_IKE,  "3gpp_simril_card get_quintuplet failed");
 			return FAILED;
 	}
 }
@@ -89,9 +75,8 @@ METHOD(simaka_card_t, resync, bool,
 	private_eap_aka_3gpp_simril_card_t *this, identification_t *id,
 	char rand[AKA_RAND_LEN], char auts[AKA_AUTS_LEN])
 {
-	DBG1(DBG_IKE, "[WRAPPER]: Generating AUTS Using RAND(indirect RES) value %b", rand, AKA_RAND_LEN);
-	memcpy(auts,rand,AKA_AUTS_LEN);
-	DBG1(DBG_IKE, "[WRAPPER]: Computed AUTS %b", auts, AKA_AUTS_LEN);
+	DBG1(DBG_IKE, "3gpp_simril_card resync, use RAND %b", rand, AKA_RAND_LEN);
+	memcpy(auts, rand, AKA_AUTS_LEN);
 	return TRUE;
 }
 
@@ -99,13 +84,6 @@ METHOD(eap_aka_3gpp_simril_card_t, destroy, void,
 	private_eap_aka_3gpp_simril_card_t *this)
 {
 	free(this);
-}
-
-METHOD(simaka_card_t, set_sa_name, void,
-	private_eap_aka_3gpp_simril_card_t *this, char *name)
-{
-	DBG1(DBG_IKE, "[WRAPPER]: Set SA name as %s", name);
-	this->sa_name = name;
 }
 
 /**
@@ -119,13 +97,16 @@ eap_aka_3gpp_simril_card_t *eap_aka_3gpp_simril_card_create()
 		.public = {
 			.card = {
 				.get_triplet = (void*)return_false,
+#ifdef VOWIFI_CFG
+				.get_quintuplet2 = _get_quintuplet,
+#else
 				.get_quintuplet = _get_quintuplet,
+#endif
 				.resync = _resync,
 				.get_pseudonym = (void*)return_null,
 				.set_pseudonym = (void*)nop,
 				.get_reauth = (void*)return_null,
 				.set_reauth = (void*)nop,
-				.set_sa_name = _set_sa_name,
 			},
 			.destroy = _destroy,
 		},
@@ -133,4 +114,3 @@ eap_aka_3gpp_simril_card_t *eap_aka_3gpp_simril_card_create()
 
 	return &this->public;
 }
-

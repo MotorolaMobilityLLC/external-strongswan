@@ -375,11 +375,21 @@ static eap_payload_t* client_process_eap(private_eap_authenticator_t *this,
 		if (this->method)
 		{
 #ifdef VOWIFI_CFG
-			if (this->method->set_sa_name) {
-				this->method->set_sa_name(this->method, this->ike_sa->get_name(this->ike_sa));
+			status_t result;
+
+			if (this->method->process2)
+			{
+				result = this->method->process2(this->method, in, &out,
+							this->ike_sa->get_name(this->ike_sa));
 			}
-#endif
+			else
+			{
+				result = this->method->process(this->method, in, &out);
+			}
+			if (result == SUCCESS)
+#else
 			if (this->method->process(this->method, in, &out) == SUCCESS)
+#endif
 			{
 				this->method->destroy(this->method);
 				this->method = NULL;
@@ -445,11 +455,21 @@ static eap_payload_t* client_process_eap(private_eap_authenticator_t *this,
 	type = this->method->get_type(this->method, &vendor);
 
 #ifdef VOWIFI_CFG
-	if (this->method->set_sa_name) {
-		this->method->set_sa_name(this->method, this->ike_sa->get_name(this->ike_sa));
+	status_t result;
+
+	if (this->method->process2)
+	{
+		result = this->method->process2(this->method, in, &out,
+					this->ike_sa->get_name(this->ike_sa));
 	}
-#endif
+	else
+	{
+		result = this->method->process(this->method, in, &out);
+	}
+	if (result == NEED_MORE)
+#else
 	if (this->method->process(this->method, in, &out) == NEED_MORE)
+#endif
 	{	/* client methods should never return SUCCESS */
 		return out;
 	}

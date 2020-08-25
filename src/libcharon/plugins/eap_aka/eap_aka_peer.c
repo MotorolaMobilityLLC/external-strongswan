@@ -78,12 +78,6 @@ struct private_eap_aka_peer_t {
 	 * Counter value if reauthentication is used
 	 */
 	uint16_t counter;
-#ifdef VOWIFI_CFG
-	/**
-	* IKE SA name
-	*/
-	char* sa_name;
-#endif
 };
 
 /**
@@ -211,8 +205,13 @@ static status_t process_identity(private_eap_aka_peer_t *this,
 /**
  * Process an EAP-AKA/Request/Challenge message
  */
+#ifdef VOWIFI_CFG
+static status_t process_challenge(private_eap_aka_peer_t *this,
+								  simaka_message_t *in, eap_payload_t **out, char *sa_name)
+#else
 static status_t process_challenge(private_eap_aka_peer_t *this,
 								  simaka_message_t *in, eap_payload_t **out)
+#endif
 {
 	simaka_message_t *message;
 	enumerator_t *enumerator;
@@ -263,7 +262,7 @@ static status_t process_challenge(private_eap_aka_peer_t *this,
 #ifndef VOWIFI_CFG
 							rand.ptr, autn.ptr, ck, ik, res, &res_len);
 #else
-							rand.ptr, autn.ptr, ck, ik, res, &res_len, this->sa_name);
+							rand.ptr, autn.ptr, ck, ik, res, &res_len, sa_name);
 #endif
 	if (status == INVALID_STATE &&
 		this->mgr->card_resync(this->mgr, this->permanent, rand.ptr, auts))
@@ -538,8 +537,13 @@ static status_t process_notification(private_eap_aka_peer_t *this,
 }
 
 
+#ifdef VOWIFI_CFG
+METHOD(eap_method_t, process, status_t,
+	private_eap_aka_peer_t *this, eap_payload_t *in, eap_payload_t **out, char *sa_name)
+#else
 METHOD(eap_method_t, process, status_t,
 	private_eap_aka_peer_t *this, eap_payload_t *in, eap_payload_t **out)
+#endif
 {
 	simaka_message_t *message;
 	status_t status;
@@ -571,7 +575,11 @@ METHOD(eap_method_t, process, status_t,
 			status = process_identity(this, message, out);
 			break;
 		case AKA_CHALLENGE:
+#ifdef VOWIFI_CFG
+			status = process_challenge(this, message, out, sa_name);
+#else
 			status = process_challenge(this, message, out);
+#endif
 			break;
 		case AKA_REAUTHENTICATION:
 			status = process_reauthentication(this, message, out);
@@ -650,14 +658,6 @@ METHOD(eap_method_t, destroy, void,
 	free(this);
 }
 
-#ifdef VOWIFI_CFG
-METHOD(eap_method_t, set_sa_name, void,
-	private_eap_aka_peer_t *this, char* name)
-{
-	this->sa_name = name;
-}
-#endif
-
 /*
  * Described in header.
  */
@@ -670,15 +670,16 @@ eap_aka_peer_t *eap_aka_peer_create(identification_t *server,
 		.public = {
 			.interface = {
 				.initiate = _initiate,
+#ifdef VOWIFI_CFG
+				.process2 = _process,
+#else
 				.process = _process,
+#endif
 				.get_type = _get_type,
 				.is_mutual = _is_mutual,
 				.get_msk = _get_msk,
 				.get_identifier = _get_identifier,
 				.set_identifier = _set_identifier,
-#ifdef VOWIFI_CFG
-				.set_sa_name = _set_sa_name,
-#endif
 				.destroy = _destroy,
 			},
 		},
