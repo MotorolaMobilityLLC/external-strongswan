@@ -1211,11 +1211,6 @@ struct ike_sa_t {
 
 #ifdef VOWIFI_CFG
 	/**
-	* Get operator type
-	*/
-	int (*get_operator)(ike_sa_t *this);
-
-	/**
 	* Set handover flag
 	*/
 	void (*set_handover)(ike_sa_t *this, int status);
@@ -1256,9 +1251,9 @@ struct ike_sa_t {
 	int (*get_mtu)(ike_sa_t *this);
 
         /**
-	* Get IP attributes
+	* Get configuration attributes
 	*/
-	char* (*get_ip_configuration_attribute)(ike_sa_t *this, configuration_attribute_type_t type, int cnt);
+	int (*get_configuration_attributes)(ike_sa_t *this, linked_list_t *list);
 #endif
 };
 

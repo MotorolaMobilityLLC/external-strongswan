@@ -890,9 +890,6 @@ static peer_cfg_t *build_peer_cfg(private_stroke_config_t *this,
 	}
 
 #ifdef VOWIFI_CFG
-	DBG1(DBG_CFG, "Operator Type : %d \n", msg->add_conn.opr_type);
-	peer_cfg->set_operator(peer_cfg, msg->add_conn.opr_type);
-
 	DBG1(DBG_CFG, "Keepalive interval : %d \n", msg->add_conn.keepalive_interval);
 	peer_cfg->set_keepalive_interval(peer_cfg, msg->add_conn.keepalive_interval);
 
@@ -906,6 +903,7 @@ static peer_cfg_t *build_peer_cfg(private_stroke_config_t *this,
 	peer_cfg->set_retransmit_timeout_handover(peer_cfg, msg->add_conn.retransmit_handover.timeout);
 	peer_cfg->set_retransmit_base_handover(peer_cfg, msg->add_conn.retransmit_handover.base);
 	peer_cfg->set_retransmit_retries_handover(peer_cfg, msg->add_conn.retransmit_handover.tries);
+	peer_cfg->add_vendor_attributes_request_list(peer_cfg, msg->add_conn.response.attributes);
 #endif
 	return peer_cfg;
 }

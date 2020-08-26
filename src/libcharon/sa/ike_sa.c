@@ -68,6 +68,7 @@
 #ifdef VOWIFI_CFG
 #include <pthread.h>
 #include <networking/tun_device.h>
+#include "vendor_response_data.h"
 #endif
 #ifdef VOWIFI_PMTU_DISCOVERY
 #include <linux/errqueue.h>
@@ -3610,62 +3611,44 @@ METHOD(ike_sa_t, destroy, void,
 }
 
 #ifdef VOWIFI_CFG
-METHOD(ike_sa_t, get_ip_configuration_attribute, char*,
-	private_ike_sa_t *this, configuration_attribute_type_t type, int cnt)
+METHOD(ike_sa_t, get_configuration_attributes, int,
+	private_ike_sa_t *this, linked_list_t *list)
 {
-	attribute_entry_t entry;
-	int i, pos = 0, len = INET6_ADDRSTRLEN * cnt + 1 + cnt;
+	int i, total = 0;
 
 	charon->bus->set_sa(charon->bus, &this->public);
 
 	/* remove attributes first, as we pass the IKE_SA to the handler */
     	charon->bus->handle_vips(charon->bus, &this->public, FALSE);
 
-        char* mem = calloc(len, 1);
-	for (i = 0; i < array_count(this->attributes); i++)
+	if (this->peer_cfg)
 	{
-    		array_get(this->attributes, i, &entry);
-        	if (entry.handler && (entry.type == type))
-        	{
-			if (entry.data.len >= 16)
+		int type = this->peer_cfg->get_next_vendor_attribute_request(this->peer_cfg);
+		while (type)
+		{
+			for (i = 0; i < array_count(this->attributes); i++)
 			{
-                    		if ((len - pos) < INET6_ADDRSTRLEN)
-				{
-					pos++;
-					break;
+				attribute_entry_t entry;
+
+				array_get(this->attributes, i, &entry);
+        			if (entry.handler && (entry.type == type))
+        			{
+					vendor_response_data_t *response = build_vendor_response_data(entry.type, entry.data);
+					total += response->get_length(response);
+					list->insert_last(list, response);
 				}
-				inet_ntop(AF_INET6, entry.data.ptr, mem + pos, (len - pos));
 			}
-			else if (entry.data.len >= 4)
-			{
-				if ((len - pos) < INET_ADDRSTRLEN)
-				{
-					pos++;
-					break;
-				}
-				inet_ntop(AF_INET, entry.data.ptr, mem + pos, (len - pos));
-			}
-			strcat(mem, ",");
-			pos = strlen(mem);
+			type = this->peer_cfg->get_next_vendor_attribute_request(this->peer_cfg);
 		}
+		this->peer_cfg->rewind_vendor_attributes_request_list(this->peer_cfg);
 	}
-
-	if(pos == 0)
+	if (list->get_count(list) > 0)
 	{
-		free(mem);
-		return NULL;
+		vendor_response_data_t *response = build_empty_response_data();
+		total += response->get_length(response);
+		list->insert_last(list, response);
 	}
-	else
-	{
-		mem[pos - 1] = 0;
-	}
-	return mem;
-}
-
-METHOD(ike_sa_t, get_operator, int,
-	private_ike_sa_t *this)
-{
-	return this->peer_cfg->get_operator(this->peer_cfg);
+	return total;
 }
 
 METHOD(ike_sa_t, set_handover, void,
@@ -3886,7 +3869,6 @@ ike_sa_t * ike_sa_create(ike_sa_id_t *ike_sa_id, bool initiator,
 			.queue_task_delayed = _queue_task_delayed,
 			.adopt_child_tasks = _adopt_child_tasks,
 #ifdef VOWIFI_CFG
-			.get_operator = _get_operator,
 			.set_handover = _set_handover,
 			.is_handover = _get_handover,
 			.set_terminate = _set_terminate,
@@ -3895,7 +3877,7 @@ ike_sa_t * ike_sa_create(ike_sa_id_t *ike_sa_id, bool initiator,
 			.wait_for_installed_vip = _wait_for_installed_vip,
 			.get_tun_name = _get_tun_name,
 			.get_mtu = _get_mtu,
-			.get_ip_configuration_attribute = _get_ip_configuration_attribute,
+			.get_configuration_attributes = _get_configuration_attributes,
 #endif
 #ifdef ME
 			.act_as_mediation_server = _act_as_mediation_server,

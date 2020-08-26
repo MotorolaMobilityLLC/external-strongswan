@@ -84,8 +84,8 @@ typedef struct
 			int tmval;
 			char *device;
 			char *address;
-			char *pcscf;
-			char *dns;
+			char *attributes;
+			char *notifies;
 			int mtu;
 		} initiate;
 

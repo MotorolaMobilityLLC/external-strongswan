@@ -69,13 +69,8 @@ struct attribute_handler_t {
 	 * @param vips			list of virtual IPs (host_t*) we are requesting
 	 * @return				enumerator (configuration_attribute_type_t, chunk_t)
 	 */
-#ifdef VOWIFI_CFG
-	enumerator_t* (*create_attribute_enumerator)(attribute_handler_t *this,
-										ike_sa_t *ike_sa, linked_list_t *vips, int attr_type);
-#else
 	enumerator_t* (*create_attribute_enumerator)(attribute_handler_t *this,
 										ike_sa_t *ike_sa, linked_list_t *vips);
-#endif
 };
 
 #endif /** ATTRIBUTE_HANDLER_H_ @}*/

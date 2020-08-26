@@ -144,7 +144,10 @@ libcharon_la_SOURCES += \
 
 ifneq ($(strongswan_BUILD_VoWiFi),)
 libcharon_la_SOURCES += \
-	comm/comm_msg.c comm/alerts.c
+	comm/comm_msg.c comm/alerts.c \
+	comm/vendor_request_data.c \
+	comm/vendor_response_data.c \
+	comm/vendor_request_list.c
 endif
 LOCAL_SRC_FILES := $(filter %.c,$(libcharon_la_SOURCES))
 

@@ -14,16 +14,20 @@ include $(CLEAR_VARS)
 # strongswan_BUILD_STARTER := true
 # strongswan_BUILD_SCEPCLIENT := true
 
-strongswan_BUILD_VoWiFi:=true
-strongswan_BUILD_USE_BORINGSSL:=true
+strongswan_BUILD_VoWiFi := true
+strongswan_BUILD_USE_BORINGSSL := true
 
 # this is the list of plugins that are built into libstrongswan and charon
 # also these plugins are loaded by default (if not changed in strongswan.conf)
+ifneq ($(strongswan_BUILD_VoWiFi),)
+strongswan_CHARON_PLUGINS := android-log openssl fips-prf random nonce pubkey \
+	pkcs1 pkcs8 pem xcbc hmac kernel-netlink socket-default \
+	counters stroke eap-identity eap-mschapv2 eap-md5 eap-gtc
+strongswan_CHARON_PLUGINS +=  eap-aka eap-aka-3gpp-simril ctr des
+else
 strongswan_CHARON_PLUGINS := android-log openssl fips-prf random nonce pubkey \
 	pkcs1 pkcs8 pem xcbc hmac kernel-netlink socket-default android-dns \
 	counters stroke eap-identity eap-mschapv2 eap-md5 eap-gtc
-ifneq ($(strongswan_BUILD_VoWiFi),)
-strongswan_CHARON_PLUGINS +=  eap-aka eap-aka-3gpp-simril p-cscf ctr des
 endif
 
 ifneq ($(strongswan_BUILD_SCEPCLIENT),)

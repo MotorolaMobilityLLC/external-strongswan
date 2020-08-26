@@ -53,16 +53,6 @@ METHOD(attribute_handler_t, handle, bool,
 			DBG1(DBG_CFG, "received P-CSCF server IP %H", server);
 			server->destroy(server);
 			return TRUE;
-#ifdef VOWIFI_CFG
-        case P_CSCF_IP4_ADDRESS_OPR_TYPE_1:
-        case P_CSCF_IP4_ADDRESS_OPR_TYPE_2:
-			DBG1(DBG_CFG,"\n Received P_CSCF_IP4_ADDRESS attribute \n");
-			return TRUE;
-        case P_CSCF_IP6_ADDRESS_OPR_TYPE_1:
-        case P_CSCF_IP6_ADDRESS_OPR_TYPE_2:
-			DBG1(DBG_CFG,"\n Received P_CSCF_IP6_ADDRESS attribute\n");
-			return TRUE;
-#endif
 		default:
 			return FALSE;
 	}

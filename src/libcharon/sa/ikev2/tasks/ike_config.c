@@ -294,11 +294,7 @@ METHOD(task_t, build_i, status_t,
 
 		enumerator = charon->attributes->create_initiator_enumerator(
 										charon->attributes, this->ike_sa, vips);
-#ifdef VOWIFI_CFG
-		while (enumerator->enumerate(enumerator, &handler, &type, &data, 0))
-#else
 		while (enumerator->enumerate(enumerator, &handler, &type, &data))
-#endif
 		{
 			configuration_attribute_t *ca;
 			entry_t *entry;
@@ -322,59 +318,6 @@ METHOD(task_t, build_i, status_t,
 			this->requested->insert_last(this->requested, entry);
 		}
 		enumerator->destroy(enumerator);
-#ifdef VOWIFI_CFG
-        enumerator = charon->attributes->create_initiator_enumerator(
-                                        charon->attributes, this->ike_sa, vips);
-        while (enumerator->enumerate(enumerator, &handler, &type, &data, 1))
-        {
-            configuration_attribute_t *ca;
-            entry_t *entry;
-            /* create configuration attribute */
-            DBG1(DBG_IKE, "building %N attribute",
-                 configuration_attribute_type_names, type);
-            ca = configuration_attribute_create_chunk(PLV2_CONFIGURATION_ATTRIBUTE,
-                                                      type, data);
-            if (!cp)
-            {
-                cp = cp_payload_create_type(PLV2_CONFIGURATION, CFG_REQUEST);
-            }
-            cp->add_attribute(cp, ca);
-
-            /* save handler along with requested type */
-            entry = malloc_thing(entry_t);
-            entry->type = type;
-            entry->handler = handler;
-
-            this->requested->insert_last(this->requested, entry);
-        }
-        enumerator->destroy(enumerator);
-
-        enumerator = charon->attributes->create_initiator_enumerator(
-                                        charon->attributes, this->ike_sa, vips);
-        while (enumerator->enumerate(enumerator, &handler, &type, &data, 2))
-        {
-            configuration_attribute_t *ca;
-            entry_t *entry;
-            /* create configuration attribute */
-            DBG1(DBG_IKE, "building %N attribute",
-                 configuration_attribute_type_names, type);
-            ca = configuration_attribute_create_chunk(PLV2_CONFIGURATION_ATTRIBUTE,
-                                                      type, data);
-            if (!cp)
-            {
-                cp = cp_payload_create_type(PLV2_CONFIGURATION, CFG_REQUEST);
-            }
-            cp->add_attribute(cp, ca);
-
-            /* save handler along with requested type */
-            entry = malloc_thing(entry_t);
-            entry->type = type;
-            entry->handler = handler;
-
-            this->requested->insert_last(this->requested, entry);
-        }
-        enumerator->destroy(enumerator);
-#endif
 		vips->destroy(vips);
 
 		if (cp)

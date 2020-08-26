@@ -408,16 +408,6 @@ struct peer_cfg_t {
 	int (*use_original_ts)(peer_cfg_t *this);
 
 	/**
-	* Set operator type
-	*/
-	void (*set_operator)(peer_cfg_t *this, int op);
-
-	/**
-	* Get operator type
-	*/
-	int (*get_operator)(peer_cfg_t *this);
-
-	/**
 	* Set handover flag
 	*/
 	void (*set_handover)(peer_cfg_t *this, int status);
@@ -466,6 +456,13 @@ struct peer_cfg_t {
 	double (*get_retransmit_timeout_handover)(peer_cfg_t *this);
 	double (*get_retransmit_base_handover)(peer_cfg_t *this);
 	int (*get_retransmit_retries_handover)(peer_cfg_t *this);
+
+	/**
+	* Attributes vendor request list
+	*/
+	void (*add_vendor_attributes_request_list)(peer_cfg_t *this, char *buffer);
+	int (*get_next_vendor_attribute_request)(peer_cfg_t *this);
+	void (*rewind_vendor_attributes_request_list)(peer_cfg_t *this);
 #endif
 };
 

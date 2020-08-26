@@ -25,6 +25,10 @@
 #include <collections/linked_list.h>
 #include <utils/identification.h>
 
+#ifdef VOWIFI_CFG
+#include "vendor_request_list.h"
+#endif
+
 ENUM(cert_policy_names, CERT_ALWAYS_SEND, CERT_NEVER_SEND,
 	"CERT_ALWAYS_SEND",
 	"CERT_SEND_IF_ASKED",
@@ -202,9 +206,6 @@ struct private_peer_cfg_t {
 	*/
 	int use_original_ts;
 
-	/** Operator type */
-	int operator;
-
 	/** Handover flag */
 	int handover;
 
@@ -223,6 +224,13 @@ struct private_peer_cfg_t {
 	double retransmit_timeout_handover;
 	double retransmit_base_handover;
 	int retransmit_retries_handover;
+
+	/**
+	* Vendor attributes request list
+	*
+	* configuration attributes requested by service
+	*/
+	vendor_request_list_t *attributes_list;
 #endif
 };
 
@@ -781,6 +789,7 @@ METHOD(peer_cfg_t, get_ref, peer_cfg_t*,
 	ref_get(&this->refcount);
 	return &this->public;
 }
+
 #ifdef VOWIFI_CFG
 METHOD(peer_cfg_t, set_keepalive_interval, void,
 	private_peer_cfg_t *this, int interval)
@@ -805,18 +814,6 @@ METHOD(peer_cfg_t, use_original_ts, int,
 	private_peer_cfg_t *this)
 {
 	return this->use_original_ts;
-}
-
-METHOD(peer_cfg_t, set_operator, void,
-	private_peer_cfg_t *this, int op)
-{
-	this->operator = op;
-}
-
-METHOD(peer_cfg_t, get_operator, int,
-	private_peer_cfg_t *this)
-{
-	return this->operator;
 }
 
 METHOD(peer_cfg_t, set_handover, void,
@@ -927,6 +924,34 @@ METHOD(peer_cfg_t, get_retransmit_retries_handover, int,
 {
 	return this->retransmit_retries_handover;
 }
+
+METHOD(peer_cfg_t, add_vendor_attributes_request_list, void,
+	private_peer_cfg_t *this, char *buffer)
+{
+	if (buffer)
+	{
+		this->attributes_list = build_vendor_request_list(buffer);
+	}
+}
+
+METHOD(peer_cfg_t, get_next_vendor_attribute_request, int,
+	private_peer_cfg_t *this)
+{
+	if (this->attributes_list)
+	{
+		return this->attributes_list->get_next(this->attributes_list);
+	}
+	return 0;
+}
+
+METHOD(peer_cfg_t, rewind_vendor_attributes_request_list, void,
+	private_peer_cfg_t *this)
+{
+	if (this->attributes_list)
+	{
+		this->attributes_list->reset(this->attributes_list);
+	}
+}
 #endif
 
 METHOD(peer_cfg_t, destroy, void,
@@ -947,6 +972,9 @@ METHOD(peer_cfg_t, destroy, void,
 		DESTROY_IF(this->peer_id);
 		free(this->mediated_by);
 #endif /* ME */
+#ifdef VOWIFI_CFG
+		DESTROY_IF(this->attributes_list);
+#endif
 		DESTROY_IF(this->ppk_id);
 		this->lock->destroy(this->lock);
 		free(this->name);
@@ -1013,8 +1041,6 @@ peer_cfg_t *peer_cfg_create(char *name, ike_cfg_t *ike_cfg,
 			.get_keepalive_interval = _get_keepalive_interval,
 			.set_use_original_ts = _set_use_original_ts,
 			.use_original_ts = _use_original_ts,
-			.set_operator = _set_operator,
-			.get_operator = _get_operator,
 			.set_handover = _set_handover,
 			.is_handover = _get_handover,
 			.set_interface = _set_interface_name,
@@ -1033,6 +1059,9 @@ peer_cfg_t *peer_cfg_create(char *name, ike_cfg_t *ike_cfg,
 			.get_retransmit_base_handover = _get_retransmit_base_handover,
 			.set_retransmit_retries_handover = _set_retransmit_retries_handover,
 			.get_retransmit_retries_handover = _get_retransmit_retries_handover,
+			.add_vendor_attributes_request_list = _add_vendor_attributes_request_list,
+			.get_next_vendor_attribute_request = _get_next_vendor_attribute_request,
+			.rewind_vendor_attributes_request_list = _rewind_vendor_attributes_request_list,
 #endif
 #ifdef ME
 			.is_mediation = _is_mediation,
@@ -1070,6 +1099,9 @@ peer_cfg_t *peer_cfg_create(char *name, ike_cfg_t *ike_cfg,
 		.mediated_by = strdupnull(data->mediated_by),
 		.peer_id = data->peer_id,
 #endif /* ME */
+#ifdef VOWIFI_CFG
+		.attributes_list = NULL,
+#endif
 	);
 	return &this->public;
 }

@@ -133,10 +133,6 @@ METHOD(payload_t, verify, status_t,
 		case INTERNAL_ADDRESS_EXPIRY:
 		case INTERNAL_IP4_DHCP:
 		case P_CSCF_IP4_ADDRESS:
-#ifdef VOWIFI_CFG
-		case P_CSCF_IP4_ADDRESS_OPR_TYPE_1:
-		case P_CSCF_IP4_ADDRESS_OPR_TYPE_2:
-#endif
 			if (this->length_or_value != 0 && this->length_or_value != 4)
 			{
 				failed = TRUE;
@@ -165,16 +161,10 @@ METHOD(payload_t, verify, status_t,
 		case INTERNAL_IP6_DNS:
 		case INTERNAL_IP6_NBNS:
 		case INTERNAL_IP6_DHCP:
+#ifndef VOWIFI_CFG
 		case P_CSCF_IP6_ADDRESS:
-#ifdef VOWIFI_CFG
-		case P_CSCF_IP6_ADDRESS_OPR_TYPE_1:
-		case P_CSCF_IP6_ADDRESS_OPR_TYPE_2:
 #endif
-			if (this->length_or_value != 0 && this->length_or_value != 16
-#ifdef VOWIFI_CFG
-			&& this->length_or_value != 17
-#endif
-			)
+			if (this->length_or_value != 0 && this->length_or_value != 16)
 			{
 				failed = TRUE;
 			}
@@ -185,10 +175,6 @@ METHOD(payload_t, verify, status_t,
 				failed = TRUE;
 			}
 			break;
-#ifdef VOWIFI_CFG
-	/* Adding attribute in any length acceptable case*/
-		case DEVICE_IMEI:
-#endif
 		case APPLICATION_VERSION:
 		case INTERNAL_IP4_SERVER:
 		case INTERNAL_IP6_SERVER:

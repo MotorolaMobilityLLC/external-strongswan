@@ -31,14 +31,6 @@
  */
 #define STROKE_BUF_LEN_INC	   1024
 
-#ifdef VOWIFI_CFG
-typedef enum {
-	OPERATOR_TYPE_DEFAULT = 0,
-	OPERATOR_TYPE_TMO_ATT,
-	OPERATOR_TYPE_VZW,
-} operator_type_t;
-#endif
-
 typedef enum list_flag_t list_flag_t;
 
 /**
@@ -320,10 +312,11 @@ struct stroke_msg_t {
 			uint32_t replay_window;
 			bool sha256_96;
 #ifdef VOWIFI_CFG
-			char* interface;
-			operator_type_t opr_type;
-			char *pcscf;
-			char *imei;
+			char *interface;
+			struct {
+				char *attributes;
+				char *notifies;
+			} request, response;
 			struct {
 				float timeout;
 				float base;

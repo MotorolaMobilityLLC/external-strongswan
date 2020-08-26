@@ -243,12 +243,9 @@ METHOD(enumerator_t, initiator_enumerate, bool,
 	configuration_attribute_type_t *type;
 	attribute_handler_t **handler;
 	chunk_t *value;
-#ifdef VOWIFI_CFG
-	int attr_type;
-	VA_ARGS_VGET(args, handler, type, value, attr_type);
-#else
+
 	VA_ARGS_VGET(args, handler, type, value);
-#endif
+
 	/* enumerate inner attributes using outer handler enumerator */
 	while (!this->inner || !this->inner->enumerate(this->inner, type, value))
 	{
@@ -257,13 +254,8 @@ METHOD(enumerator_t, initiator_enumerate, bool,
 			return FALSE;
 		}
 		DESTROY_IF(this->inner);
-#ifdef VOWIFI_CFG
-		this->inner = this->handler->create_attribute_enumerator(this->handler,
-													this->ike_sa, this->vips, attr_type);
-#else
 		this->inner = this->handler->create_attribute_enumerator(this->handler,
 													this->ike_sa, this->vips);
-#endif
 	}
 	/* inject the handler as additional attribute */
 	*handler = this->handler;

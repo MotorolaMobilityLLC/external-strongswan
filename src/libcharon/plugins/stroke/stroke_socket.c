@@ -217,8 +217,11 @@ static void stroke_add_conn(private_stroke_socket_t *this, stroke_msg_t *msg)
 	pop_string(msg, &msg->add_conn.ikeme.mediated_by);
 	pop_string(msg, &msg->add_conn.ikeme.peerid);
 #ifdef VOWIFI_CFG
-	pop_string(msg, &msg->add_conn.pcscf);
-	pop_string(msg, &msg->add_conn.imei);
+	/* data arrays */
+	pop_string(msg, &msg->add_conn.request.attributes);
+	pop_string(msg, &msg->add_conn.request.notifies);
+	pop_string(msg, &msg->add_conn.response.attributes);
+	pop_string(msg, &msg->add_conn.response.notifies);
 #endif
 	DBG_OPT("  eap_identity=%s", msg->add_conn.eap_identity);
 	DBG_OPT("  aaa_identity=%s", msg->add_conn.aaa_identity);
@@ -235,10 +238,6 @@ static void stroke_add_conn(private_stroke_socket_t *this, stroke_msg_t *msg)
 	DBG_OPT("  mediated_by=%s", msg->add_conn.ikeme.mediated_by);
 	DBG_OPT("  me_peerid=%s", msg->add_conn.ikeme.peerid);
 	DBG_OPT("  keyexchange=ikev%u", msg->add_conn.version);
-#ifdef VOWIFI_CFG
-	DBG_OPT("  pcscf=%s", msg->add_conn.pcscf);
-	DBG_OPT("  imei=%s", msg->add_conn.imei);
-#endif
 
 	this->config->add(this->config, msg);
 	this->attribute->add_dns(this->attribute, msg);
@@ -950,7 +949,7 @@ stroke_socket_t *stroke_socket_create()
 		time(&t1);
 		DBG1(DBG_CFG," Created stroke socket at time: %s", ctime(&t1));
     		DBG1(DBG_CFG, "Changing owner to: %d", AID_RADIO);
-    		if(chown( STROKE_SOCKET, AID_RADIO, AID_RADIO) == -1)
+    		if(chown(STROKE_SOCKET, AID_RADIO, AID_RADIO) == -1)
 		{
 			DBG1(DBG_CFG, "chown failed for socket: %s", strerror(errno));
     		}

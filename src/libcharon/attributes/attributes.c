@@ -44,23 +44,7 @@ ENUM_BEGIN(configuration_attribute_type_names, INTERNAL_IP4_ADDRESS, INTERNAL_DN
 	"TIMEOUT_PERIOD_FOR_DPD",
 	"INTERNAL_DNS_DOMAIN",
 	"INTERNAL_DNSSEC_TA");
-#ifdef VOWIFI_CFG
-	/* As per different Requirements for different customer */
-
-ENUM_NEXT(configuration_attribute_type_names, P_CSCF_IP4_ADDRESS_OPR_TYPE_1, P_CSCF_IP4_ADDRESS_OPR_TYPE_1, INTERNAL_DNSSEC_TA,
-	"P_CSCF_IP4_ADDRESS_OPR_TYPE_1");
-
-ENUM_NEXT(configuration_attribute_type_names, P_CSCF_IP6_ADDRESS_OPR_TYPE_1, P_CSCF_IP6_ADDRESS_OPR_TYPE_1, P_CSCF_IP4_ADDRESS_OPR_TYPE_1,
-	"P_CSCF_IP6_ADDRESS_OPR_TYPE_1");
-
-ENUM_NEXT(configuration_attribute_type_names, P_CSCF_IP4_ADDRESS_OPR_TYPE_2, DEVICE_IMEI, P_CSCF_IP6_ADDRESS_OPR_TYPE_1,
-	"P_CSCF_IP4_ADDRESS_OPR_TYPE_2",
-	"P_CSCF_IP6_ADDRESS_OPR_TYPE_2",
-	"DEVICE_IMEI");
-ENUM_NEXT(configuration_attribute_type_names, XAUTH_TYPE, XAUTH_ANSWER, DEVICE_IMEI,
-#else
 ENUM_NEXT(configuration_attribute_type_names, XAUTH_TYPE, XAUTH_ANSWER, INTERNAL_DNSSEC_TA,
-#endif
 	"XAUTH_TYPE",
 	"XAUTH_USER_NAME",
 	"XAUTH_USER_PASSWORD",
@@ -115,26 +99,7 @@ ENUM_BEGIN(configuration_attribute_type_short_names, INTERNAL_IP4_ADDRESS, INTER
 	"DPD",
 	"DOMAIN",
 	"TA");
-#ifdef VOWIFI_CFG
-	/* As per different Requirements for different customer */
-
-
-ENUM_NEXT(configuration_attribute_type_short_names, P_CSCF_IP4_ADDRESS_OPR_TYPE_1, P_CSCF_IP4_ADDRESS_OPR_TYPE_1, INTERNAL_DNSSEC_TA,
-	"PCSCF_OPR_TYPE_1");
-
-ENUM_NEXT(configuration_attribute_type_short_names, P_CSCF_IP6_ADDRESS_OPR_TYPE_1, P_CSCF_IP6_ADDRESS_OPR_TYPE_1, P_CSCF_IP4_ADDRESS_OPR_TYPE_1,
-	"PCSCF6_OPR_TYPE_1");
-
-ENUM_NEXT(configuration_attribute_type_short_names, P_CSCF_IP4_ADDRESS_OPR_TYPE_2, DEVICE_IMEI, P_CSCF_IP6_ADDRESS_OPR_TYPE_1,
-	"PCSCF_OPR_TYPE_2",
-	"PCSCF6_OPR_TYPE_2",
-	"IMEI");
-ENUM_NEXT(configuration_attribute_type_short_names, XAUTH_TYPE, XAUTH_ANSWER, DEVICE_IMEI,
-
-
-#else
 ENUM_NEXT(configuration_attribute_type_short_names, XAUTH_TYPE, XAUTH_ANSWER, INTERNAL_DNSSEC_TA,
-#endif
 	"X_TYPE",
 	"X_USER",
 	"X_PWD",

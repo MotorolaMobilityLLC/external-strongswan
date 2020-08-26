@@ -10,6 +10,7 @@
 #include "comm_msg.h"
 #include "alerts.h"
 #include "stroke_msg.h"
+#include "vendor_response_data.h"
 
 static charon_response_t *create_response_msg(charon_response_type_t type)
 {
@@ -47,6 +48,33 @@ static void push_string_impl(charon_response_t **msg, size_t offset, char *strin
 	}
 	(*msg)->length += str_len;
 	strcpy((char*)*msg + cur_len, string);
+	*(char**)((char*)*msg + offset) = (char*)cur_len;
+}
+
+#define push_array(msg, field, data, length) \
+	push_array_impl(msg, offsetof(charon_response_t, field), data, length)
+
+static void push_array_impl(charon_response_t **msg, size_t offset, char *data, int length)
+{
+	size_t cur_len = (*msg)->length;
+
+	if (!data || !length)
+	{
+		return;
+	}
+	if (cur_len + length >= UINT16_MAX)
+	{
+		(*msg)->length = UINT16_MAX;
+		return;
+	}
+	while (cur_len + length > sizeof(charon_response_t) + (*msg)->buflen)
+	{
+		*msg = realloc(*msg, sizeof(charon_response_t) + (*msg)->buflen +
+					   STROKE_BUF_LEN_INC);
+		(*msg)->buflen += STROKE_BUF_LEN_INC;
+	}
+	(*msg)->length += length;
+	memcpy((char*)*msg + cur_len, data, length);
 	*(char**)((char*)*msg + offset) = (char*)cur_len;
 }
 
@@ -123,6 +151,34 @@ void charon_send_initate_failure(stroke_msg_t *msg, int index)
 	free(res);
 }
 
+static char* get_attributes(ike_sa_t *ike_sa, int *total)
+{
+	linked_list_t *vendor_attributes = linked_list_create();
+	int length = ike_sa->get_configuration_attributes(ike_sa, vendor_attributes);
+
+	if (length)
+	{
+		vendor_response_data_t *attr;
+
+		char *mem = calloc(length + sizeof(int), 1);
+		char *tmp = mem + sizeof(int);
+
+		*((unsigned int*)mem) = length;
+
+		while (vendor_attributes->remove_first(vendor_attributes, &attr) == SUCCESS)
+		{
+			tmp = attr->pack(attr, tmp);
+			attr->destroy(attr);
+		}
+		vendor_attributes->destroy(vendor_attributes);
+
+		*total = length + sizeof(int);
+		return mem;
+	}
+	vendor_attributes->destroy(vendor_attributes);
+	return NULL;
+}
+
 static char* get_addresses(ike_sa_t *ike_sa, int cnt)
 {
 	enumerator_t *enumerator;
@@ -195,81 +251,25 @@ void charon_send_initiate_success(stroke_msg_t *msg, int index)
 	{
 		if (streq(msg->initiate.name, ike_sa->get_name(ike_sa)))
 		{
-			char *attr, *ipv4str = NULL, *ipv6str = NULL;
+			char *attr = NULL;
+			int length = 0;
 
 			push_string(&res, initiate.device, ike_sa->get_tun_name(ike_sa));
 			res->initiate.mtu = ike_sa->get_mtu(ike_sa);
 
-			/* DNS */
-			ipv4str = ike_sa->get_ip_configuration_attribute(ike_sa, INTERNAL_IP4_DNS, 8);
-			ipv6str = ike_sa->get_ip_configuration_attribute(ike_sa, INTERNAL_IP6_DNS, 8);
-			if (ipv4str || ipv6str)
-			{
-				char* dns = calloc((ipv4str ? strlen(ipv4str) : 0) + (ipv6str ? strlen(ipv6str) : 0) + 2, 1);
-				if (ipv4str)
-				{
-					strcat(dns, ipv4str);
-					free(ipv4str);
-				}
-				if (ipv6str)
-				{
-					if (ipv4str)
-					{
-						strcat(dns, ",");
-					}
-					strcat(dns, ipv6str);
-					free(ipv6str);
-				}
-				ipv4str = NULL;
-				ipv6str = NULL;
-
-				push_string(&res, initiate.dns, dns);
-				free(dns);
-			}
-			/* P-CSCF */
-			switch (ike_sa->get_operator(ike_sa))
-			{
-				case OPERATOR_TYPE_TMO_ATT:
-					ipv4str = ike_sa->get_ip_configuration_attribute(ike_sa, P_CSCF_IP4_ADDRESS_OPR_TYPE_1, 8);
-					ipv6str = ike_sa->get_ip_configuration_attribute(ike_sa, P_CSCF_IP6_ADDRESS_OPR_TYPE_1, 8);
-					break;
-				case OPERATOR_TYPE_VZW:
-					ipv4str = ike_sa->get_ip_configuration_attribute(ike_sa, P_CSCF_IP4_ADDRESS_OPR_TYPE_2, 8);
-					ipv6str = ike_sa->get_ip_configuration_attribute(ike_sa, P_CSCF_IP6_ADDRESS_OPR_TYPE_2, 8);
-					break;
-				case OPERATOR_TYPE_DEFAULT:
-				default:
-					ipv4str = ike_sa->get_ip_configuration_attribute(ike_sa, P_CSCF_IP4_ADDRESS, 8);
-					ipv6str = ike_sa->get_ip_configuration_attribute(ike_sa, P_CSCF_IP6_ADDRESS, 8);
-	    		}
-			if (ipv4str || ipv6str)
-			{
-				char* pcscf = calloc((ipv4str ? strlen(ipv4str) : 0) + (ipv6str ? strlen(ipv6str) : 0) + 2, 1);
-				if (ipv4str)
-				{
-					strcat(pcscf, ipv4str);
-					free(ipv4str);
-				}
-				if (ipv6str)
-				{
-					if (ipv4str)
-					{
-						strcat(pcscf, ",");
-					}
-					strcat(pcscf, ipv6str);
-					free(ipv6str);
-				}
-				ipv4str = NULL;
-				ipv6str = NULL;
-
-				push_string(&res, initiate.pcscf, pcscf);
-				free(pcscf);
-			}
 			/* Addresses */
 			attr = get_addresses(ike_sa, 4);
 			if (attr)
 			{
 				push_string(&res, initiate.address, attr);
+				free(attr);
+			}
+
+			/* attributes */
+			attr = get_attributes(ike_sa, &length);
+			if (attr)
+			{
+				push_array(&res, initiate.attributes, attr, length);
 				free(attr);
 			}
 

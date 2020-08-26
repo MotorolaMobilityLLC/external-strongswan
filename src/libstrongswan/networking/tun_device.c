@@ -435,6 +435,7 @@ METHOD(tun_device_t, destroy, void,
 		this->addresses->remove_at(this->addresses, enumerator);
 		address->destroy(address);
 	}
+	enumerator->destroy(enumerator);
 #endif
 	free(this);
 }
