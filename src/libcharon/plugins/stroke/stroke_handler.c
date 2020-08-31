@@ -261,6 +261,12 @@ METHOD(attribute_handler_t, handle, bool,
 			{
 				DBG1(DBG_CFG, "processed attribute %d", type);
 
+				if ((type == TIMEOUT_PERIOD_FOR_DPD) && (data.len == 4))
+				{
+					uint32_t interval = ntohl(*((uint32_t*)data.ptr));
+					ike_sa->set_dpd_interval(ike_sa, interval);
+				}
+
 				result = TRUE;
 				break;
 			}

@@ -3730,6 +3730,17 @@ METHOD(ike_sa_t, get_mtu, int,
 {
 	return this->mtu;
 }
+
+METHOD(ike_sa_t, set_dpd_interval, void,
+	private_ike_sa_t *this, uint32_t interval)
+{
+	DBG1(DBG_IKE, "Set DPD interval to %d seconds", interval);
+
+	if (this->peer_cfg)
+	{
+		this->peer_cfg->set_dpd_interval(this->peer_cfg, interval);
+	}
+}
 #endif
 
 #ifdef VOWIFI_USE_TIMER
@@ -3878,6 +3889,7 @@ ike_sa_t * ike_sa_create(ike_sa_id_t *ike_sa_id, bool initiator,
 			.get_tun_name = _get_tun_name,
 			.get_mtu = _get_mtu,
 			.get_configuration_attributes = _get_configuration_attributes,
+			.set_dpd_interval = _set_dpd_interval,
 #endif
 #ifdef ME
 			.act_as_mediation_server = _act_as_mediation_server,

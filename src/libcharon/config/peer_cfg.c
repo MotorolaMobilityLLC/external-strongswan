@@ -952,6 +952,12 @@ METHOD(peer_cfg_t, rewind_vendor_attributes_request_list, void,
 		this->attributes_list->reset(this->attributes_list);
 	}
 }
+
+METHOD(peer_cfg_t, set_dpd_interval, void,
+	private_peer_cfg_t *this, uint32_t interval)
+{
+	this->dpd = interval;
+}
 #endif
 
 METHOD(peer_cfg_t, destroy, void,
@@ -1062,6 +1068,7 @@ peer_cfg_t *peer_cfg_create(char *name, ike_cfg_t *ike_cfg,
 			.add_vendor_attributes_request_list = _add_vendor_attributes_request_list,
 			.get_next_vendor_attribute_request = _get_next_vendor_attribute_request,
 			.rewind_vendor_attributes_request_list = _rewind_vendor_attributes_request_list,
+			.set_dpd_interval = _set_dpd_interval,
 #endif
 #ifdef ME
 			.is_mediation = _is_mediation,

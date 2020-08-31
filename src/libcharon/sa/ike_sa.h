@@ -1254,6 +1254,11 @@ struct ike_sa_t {
 	* Get configuration attributes
 	*/
 	int (*get_configuration_attributes)(ike_sa_t *this, linked_list_t *list);
+
+	/**
+	* Set DPD interval
+	*/
+	void (*set_dpd_interval)(ike_sa_t *this, uint32_t interval);
 #endif
 };
 

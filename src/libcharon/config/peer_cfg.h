@@ -463,6 +463,11 @@ struct peer_cfg_t {
 	void (*add_vendor_attributes_request_list)(peer_cfg_t *this, char *buffer);
 	int (*get_next_vendor_attribute_request)(peer_cfg_t *this);
 	void (*rewind_vendor_attributes_request_list)(peer_cfg_t *this);
+
+	/**
+	* Set DPD interval
+	*/
+	void (*set_dpd_interval)(peer_cfg_t *this, uint32_t interval);
 #endif
 };
 
