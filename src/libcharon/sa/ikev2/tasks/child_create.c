@@ -1233,6 +1233,10 @@ METHOD(task_t, build_i, status_t,
 		return FAILED;
 	}
 
+#ifdef VOWIFI_CFG
+	peer_cfg->put_vendor_notifies_to_message(peer_cfg, message);
+#endif
+
 	this->tsi->destroy_offset(this->tsi, offsetof(traffic_selector_t, destroy));
 	this->tsr->destroy_offset(this->tsr, offsetof(traffic_selector_t, destroy));
 	this->proposals->destroy_offset(this->proposals, offsetof(proposal_t, destroy));

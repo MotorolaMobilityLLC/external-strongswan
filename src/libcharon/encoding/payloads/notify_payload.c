@@ -136,14 +136,7 @@ ENUM_NEXT(notify_type_names, ME_MEDIATION, RADIUS_ATTRIBUTE, USE_BEET_MODE,
 	"ME_CONNECTAUTH",
 	"ME_RESPONSE",
 	"RADIUS_ATTRIBUTE");
-#ifndef VOWIFI_CFG
 ENUM_END(notify_type_names, RADIUS_ATTRIBUTE);
-#else
-ENUM_NEXT(notify_type_names, BACKOFF_TIMER, BACKOFF_TIMER, RADIUS_ATTRIBUTE,
-	"BACKOFF_TIMER");
-ENUM_END(notify_type_names, BACKOFF_TIMER);
-#endif
-
 
 ENUM_BEGIN(notify_type_short_names, UNSUPPORTED_CRITICAL_PAYLOAD, UNSUPPORTED_CRITICAL_PAYLOAD,
 	"CRIT");
@@ -256,14 +249,7 @@ ENUM_NEXT(notify_type_short_names, ME_MEDIATION, RADIUS_ATTRIBUTE, USE_BEET_MODE
 	"ME_CAUTH",
 	"ME_R",
 	"RADIUS");
-#ifndef VOWIFI_CFG
 ENUM_END(notify_type_short_names, RADIUS_ATTRIBUTE);
-#else
-ENUM_NEXT(notify_type_short_names, BACKOFF_TIMER, BACKOFF_TIMER, RADIUS_ATTRIBUTE,
-	"BACKOFF_TMR");
-ENUM_END(notify_type_short_names, BACKOFF_TIMER);
-#endif
-
 
 typedef struct private_notify_payload_t private_notify_payload_t;
 
@@ -569,14 +555,6 @@ METHOD(payload_t, verify, status_t,
 				bad_length = TRUE;
 			}
 			break;
-#ifdef VOWIFI_CFG
-		case BACKOFF_TIMER:
-			if (this->notify_data.len != 2)
-			{
-				bad_length = TRUE;
-			}
-			break;
-#endif
 		default:
 			/* TODO: verify */
 			break;

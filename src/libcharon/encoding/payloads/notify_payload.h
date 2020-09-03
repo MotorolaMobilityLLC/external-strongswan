@@ -178,10 +178,6 @@ enum notify_type_t {
 	ME_RESPONSE = 40968,
 	/* RADIUS attribute received/to send to a AAA backend */
 	RADIUS_ATTRIBUTE = 40969,
-#ifdef VOWIFI_CFG
-	/* 3GPP TS 24.302 */
-	BACKOFF_TIMER = 41041,
-#endif
 };
 
 /**

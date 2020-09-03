@@ -904,6 +904,8 @@ static peer_cfg_t *build_peer_cfg(private_stroke_config_t *this,
 	peer_cfg->set_retransmit_base_handover(peer_cfg, msg->add_conn.retransmit_handover.base);
 	peer_cfg->set_retransmit_retries_handover(peer_cfg, msg->add_conn.retransmit_handover.tries);
 	peer_cfg->add_vendor_attributes_request_list(peer_cfg, msg->add_conn.response.attributes);
+	peer_cfg->add_vendor_notifies(peer_cfg, msg->add_conn.request.notifies);
+	peer_cfg->add_vendor_notifies_request_list(peer_cfg, msg->add_conn.response.notifies);
 #endif
 	return peer_cfg;
 }

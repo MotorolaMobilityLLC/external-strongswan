@@ -1259,6 +1259,13 @@ struct ike_sa_t {
 	* Set DPD interval
 	*/
 	void (*set_dpd_interval)(ike_sa_t *this, uint32_t interval);
+
+	/**
+	* Notifies control
+	*/
+	void (*process_vendor_notify)(ike_sa_t *this, int type, message_t *message);
+	void* (*process_failed_notify)(ike_sa_t *this, int type, message_t *message);
+	int (*get_vendor_notifies)(ike_sa_t *this, linked_list_t *list);
 #endif
 };
 

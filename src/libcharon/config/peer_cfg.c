@@ -26,6 +26,7 @@
 #include <utils/identification.h>
 
 #ifdef VOWIFI_CFG
+#include "vendor_request_data.h"
 #include "vendor_request_list.h"
 #endif
 
@@ -231,6 +232,20 @@ struct private_peer_cfg_t {
 	* configuration attributes requested by service
 	*/
 	vendor_request_list_t *attributes_list;
+
+	/**
+	* Vendor notifies request list
+	*
+	* Notifies requested by service
+	*/
+	linked_list_t *notifies_request_list;
+
+	/**
+	* Vendor notifies response list
+	*
+	* Notifies expected in response by service
+	*/
+	vendor_request_list_t *notifies_response_list;
 #endif
 };
 
@@ -958,6 +973,79 @@ METHOD(peer_cfg_t, set_dpd_interval, void,
 {
 	this->dpd = interval;
 }
+
+METHOD(peer_cfg_t, add_vendor_notifies_request_list, void,
+	private_peer_cfg_t *this, char *buffer)
+{
+	if (buffer)
+	{
+		this->notifies_response_list = build_vendor_request_list(buffer);
+	}
+}
+
+METHOD(peer_cfg_t, is_vendor_notify_requested, bool,
+	private_peer_cfg_t *this, int type)
+{
+	if (this->notifies_response_list)
+	{
+		return this->notifies_response_list->is_requested(this->notifies_response_list, type);
+	}
+	return FALSE;
+}
+
+METHOD(peer_cfg_t, get_next_vendor_notify_request, int,
+	private_peer_cfg_t *this)
+{
+	if (this->notifies_response_list)
+	{
+		return this->notifies_response_list->get_next(this->notifies_response_list);
+	}
+	return 0;
+}
+
+METHOD(peer_cfg_t, rewind_vendor_notify_request_list, void,
+	private_peer_cfg_t *this)
+{
+	if (this->notifies_response_list)
+	{
+		this->notifies_response_list->reset(this->notifies_response_list);
+	}
+}
+
+METHOD(peer_cfg_t, add_vendor_notifies, void,
+	private_peer_cfg_t *this, char *buffer)
+{
+	if (buffer)
+	{
+		int offset = 0;
+
+		vendor_request_data_t *request = build_vendor_request_data(buffer, &offset);
+		while (!request->is_empty(request))
+		{
+			this->notifies_request_list->insert_last(this->notifies_request_list, request);
+			request = build_vendor_request_data(buffer, &offset);
+		}
+		request->destroy(request);
+	}
+}
+
+METHOD(peer_cfg_t, put_vendor_notifies_to_message, void,
+	private_peer_cfg_t *this, message_t *message)
+{
+	vendor_request_data_t *notify;
+
+	/*
+		remove requested notifies
+		one time request only
+	*/
+	while (this->notifies_request_list->remove_first(
+			this->notifies_request_list, &notify) == SUCCESS)
+	{
+		message->add_notify(message, FALSE,
+			notify->get_notify_type(notify), notify->get_data(notify));
+		notify->destroy(notify);
+	}
+}
 #endif
 
 METHOD(peer_cfg_t, destroy, void,
@@ -980,6 +1068,15 @@ METHOD(peer_cfg_t, destroy, void,
 #endif /* ME */
 #ifdef VOWIFI_CFG
 		DESTROY_IF(this->attributes_list);
+		DESTROY_IF(this->notifies_response_list);
+
+		vendor_request_data_t *req;
+		while (this->notifies_request_list->remove_first(
+				this->notifies_request_list, &req) == SUCCESS)
+		{
+			req->destroy(req);
+		}
+		DESTROY_IF(this->notifies_request_list);
 #endif
 		DESTROY_IF(this->ppk_id);
 		this->lock->destroy(this->lock);
@@ -1069,6 +1166,12 @@ peer_cfg_t *peer_cfg_create(char *name, ike_cfg_t *ike_cfg,
 			.get_next_vendor_attribute_request = _get_next_vendor_attribute_request,
 			.rewind_vendor_attributes_request_list = _rewind_vendor_attributes_request_list,
 			.set_dpd_interval = _set_dpd_interval,
+			.add_vendor_notifies = _add_vendor_notifies,
+			.put_vendor_notifies_to_message = _put_vendor_notifies_to_message,
+			.add_vendor_notifies_request_list = _add_vendor_notifies_request_list,
+			.is_vendor_notify_requested = _is_vendor_notify_requested,
+			.get_next_vendor_notify_request = _get_next_vendor_notify_request,
+			.rewind_vendor_notify_request_list = _rewind_vendor_notify_request_list,
 #endif
 #ifdef ME
 			.is_mediation = _is_mediation,
@@ -1108,6 +1211,8 @@ peer_cfg_t *peer_cfg_create(char *name, ike_cfg_t *ike_cfg,
 #endif /* ME */
 #ifdef VOWIFI_CFG
 		.attributes_list = NULL,
+		.notifies_request_list = linked_list_create(),
+		.notifies_response_list = NULL,
 #endif
 	);
 	return &this->public;

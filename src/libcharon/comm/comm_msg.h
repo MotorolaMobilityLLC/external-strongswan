@@ -81,7 +81,6 @@ typedef struct
 			char *name;
 			charon_error_code_t status;
 			int notify;
-			int tmval;
 			char *device;
 			char *address;
 			char *attributes;

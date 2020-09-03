@@ -21,6 +21,22 @@ struct private_vendor_request_list_t {
 	unsigned int *values;
 };
 
+METHOD(vendor_request_list_t, is_requested, bool,
+	private_vendor_request_list_t *this, int type)
+{
+	if (this->size)
+	{
+		for (int i = 0; i < this->size; i++)
+		{
+			if (this->values[i] == type)
+			{
+				return TRUE;
+			}
+		}
+	}
+	return FALSE;
+}
+
 METHOD(vendor_request_list_t, get_next, int,
 	private_vendor_request_list_t *this)
 {
@@ -53,6 +69,7 @@ vendor_request_list_t* build_vendor_request_list(char *buffer)
 
 	INIT(this,
 		.public = {
+			.is_requested = _is_requested,
 			.get_next = _get_next,
 			.reset = _reset,
 			.destroy = _destroy,

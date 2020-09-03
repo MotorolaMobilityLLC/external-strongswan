@@ -1275,25 +1275,19 @@ METHOD(task_t, process_i, status_t,
 				{
 					if (type <= 16383)
 					{
-#ifdef VOWIFI_CFG
-						int timer_val = 0;
-						notify_payload_t* notify = message->get_notify(message, BACKOFF_TIMER);
-						if (notify)
-						{
-							chunk_t data = notify->get_notification_data(notify);
-							/* skip first bype, it is length */
-							timer_val = data.ptr[1];
-						}
-#endif
 						DBG1(DBG_IKE, "received %N notify error",
 							 notify_type_names, type);
 						enumerator->destroy(enumerator);
 						charon->bus->alert(charon->bus, ALERT_LOCAL_AUTH_FAILED);
 #ifdef VOWIFI_CFG
-						charon->bus->alert(charon->bus, ALERT_NETWORK_FAILURE, type, timer_val);
+						void *data = this->ike_sa->process_failed_notify(this->ike_sa, type, message);
+						charon->bus->alert(charon->bus, ALERT_NETWORK_FAILURE, type, data);
 #endif
 						return FAILED;
 					}
+#ifdef VOWIFI_CFG
+					this->ike_sa->process_vendor_notify(this->ike_sa, type, message);
+#endif
 					DBG2(DBG_IKE, "received %N notify",
 						notify_type_names, type);
 					break;

@@ -36,6 +36,9 @@ typedef struct peer_cfg_create_t peer_cfg_create_t;
 #include <config/ike_cfg.h>
 #include <config/child_cfg.h>
 #include <credentials/auth_cfg.h>
+#ifdef VOWIFI_CFG
+#include <encoding/message.h>
+#endif
 
 /**
  * Certificate sending policy. This is also used for certificate
@@ -463,6 +466,20 @@ struct peer_cfg_t {
 	void (*add_vendor_attributes_request_list)(peer_cfg_t *this, char *buffer);
 	int (*get_next_vendor_attribute_request)(peer_cfg_t *this);
 	void (*rewind_vendor_attributes_request_list)(peer_cfg_t *this);
+
+	/**
+	* Notifies list
+	*/
+	void (*add_vendor_notifies)(peer_cfg_t *this, char* buffer);
+	void (*put_vendor_notifies_to_message)(peer_cfg_t *this, message_t *message);
+
+	/**
+	* Notifies vendor request list
+	*/
+	void (*add_vendor_notifies_request_list)(peer_cfg_t *this, char *buffer);
+	bool (*is_vendor_notify_requested)(peer_cfg_t *this, int type);
+	int (*get_next_vendor_notify_request)(peer_cfg_t *this);
+	void (*rewind_vendor_notify_request_list)(peer_cfg_t *this);
 
 	/**
 	* Set DPD interval

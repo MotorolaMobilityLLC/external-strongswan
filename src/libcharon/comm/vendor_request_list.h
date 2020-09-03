@@ -6,6 +6,9 @@
 typedef struct vendor_request_list_t vendor_request_list_t;
 
 struct vendor_request_list_t {
+	/* check if requested */
+	bool (*is_requested)(vendor_request_list_t *this, int type);
+
 	/* get next request value */
         int (*get_next)(vendor_request_list_t *this);
 

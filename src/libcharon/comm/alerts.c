@@ -9,11 +9,11 @@
 #define MAX_CONNECTIONS		16
 
 typedef struct {
-    bool 	valid;		// used or not
-    char	*name;		// connection name
-    uint64_t 	signal;		// local signal
-    int 	notify;		// notify value
-    int 	tmval;		// backoff timer value
+	bool 		valid;		// used or not
+	char		*name;		// connection name
+	uint64_t 	signal;		// local signal
+	int 		notify;		// failure notify value
+	void		*container;	// additional data
 } alerts_status_t;
 
 static alerts_status_t g_alerts_status[MAX_CONNECTIONS];
@@ -31,15 +31,15 @@ int get_alerts_notify(int index)
 	return 0;
 }
 
-int get_alerts_timer(int index)
+void *get_alerts_vendor_container(int index)
 {
-	if ((index < 0) || (index >= MAX_CONNECTIONS)) return 0;
+	if ((index < 0) || (index >= MAX_CONNECTIONS)) return NULL;
 
 	if (g_alerts_status[index].valid)
 	{
-		return g_alerts_status[index].tmval;
+		return g_alerts_status[index].container;
 	}
-	return 0;
+	return NULL;
 }
 
 int get_alerts_index(char *name)
@@ -65,7 +65,7 @@ int get_alerts_index(char *name)
 			g_alerts_status[i].name   = strdup(name);
 			g_alerts_status[i].signal = 0;
 			g_alerts_status[i].notify = 0;
-			g_alerts_status[i].tmval  = 0;
+			g_alerts_status[i].container = NULL;
 			g_alerts_status[i].valid  = TRUE;
 			return i;
 		}
@@ -105,8 +105,8 @@ void set_alert(ike_sa_t *ike_sa, alert_t alert, va_list args)
 			g_alerts_status[i].signal = g_alerts_status[i].signal | alert_bit;
 			if (alert == ALERT_NETWORK_FAILURE)
 			{
-				g_alerts_status[i].notify = va_arg(args,int);
-				g_alerts_status[i].tmval = va_arg(args, int);
+				g_alerts_status[i].notify = va_arg(args, int);
+				g_alerts_status[i].container = va_arg(args, void*);
 			}
 			DBG1(DBG_CFG, "Alert for event initiated by service notify: %d, signal %"PRIu64"", g_alerts_status[i].notify, g_alerts_status[i].signal);
 			return;

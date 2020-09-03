@@ -49,6 +49,10 @@ METHOD(vendor_response_data_t, pack, char*,
 METHOD(vendor_response_data_t, destroy, void,
 	private_vendor_response_data_t *this)
 {
+	if (this->data.ptr)
+	{
+		chunk_free(&this->data);
+	}
 	free(this);
 }
 
@@ -63,7 +67,7 @@ vendor_response_data_t* build_vendor_response_data(int type, chunk_t data)
 			.destroy = _destroy,
 		},
 		.type = type,
-		.data = data,
+		.data = chunk_clone(data),
 	);
 	return &this->public;
 }

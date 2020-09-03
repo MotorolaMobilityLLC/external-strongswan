@@ -33,6 +33,12 @@ METHOD(vendor_request_data_t, get_attribute_type, configuration_attribute_type_t
 	return this->type;
 }
 
+METHOD(vendor_request_data_t, get_notify_type, notify_type_t,
+	private_vendor_request_data_t *this)
+{
+	return this->type;
+}
+
 METHOD(vendor_request_data_t, get_data, chunk_t,
 	private_vendor_request_data_t *this)
 {
@@ -62,6 +68,7 @@ vendor_request_data_t* build_vendor_request_data(char *buffer, int *offset)
 	INIT(this,
 		.public = {
 			.get_attribute_type = _get_attribute_type,
+			.get_notify_type = _get_notify_type,
 			.get_data = _get_data,
 			.is_empty = _is_empty,
 			.destroy = _destroy,
@@ -88,6 +95,7 @@ vendor_request_data_t* build_dns_request_data(host_t* host)
 	INIT(this,
 		.public = {
 			.get_attribute_type = _get_attribute_type,
+			.get_notify_type = _get_notify_type,
 			.get_data = _get_data,
 			.is_empty = _is_empty,
 			.destroy = _destroy,
@@ -105,7 +113,8 @@ vendor_request_data_t* build_dns_request_data(host_t* host)
 	}
 	if (!host->is_anyaddr(host))
 	{
-		this->data = host->get_address(host);
+		chunk_t chunk = host->get_address(host);
+		this->data = chunk_clone(chunk);
 	}
 
 	return &this->public;

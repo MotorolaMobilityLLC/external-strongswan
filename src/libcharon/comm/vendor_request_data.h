@@ -9,6 +9,9 @@ struct vendor_request_data_t {
 	/* get configuration type */
 	configuration_attribute_type_t (*get_attribute_type)(vendor_request_data_t *this);
 
+	/* get notify type */
+	notify_type_t (*get_notify_type)(vendor_request_data_t *this);
+
 	/* return vendor data */
 	chunk_t (*get_data)(vendor_request_data_t *this);
 

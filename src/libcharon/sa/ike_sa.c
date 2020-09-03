@@ -304,6 +304,9 @@ struct private_ike_sa_t {
 
 	/** MTU */
 	int mtu;
+
+	/** Vendor notifies */
+	linked_list_t *notifies;
 #endif
 
 #ifdef VOWIFI_USE_TIMER
@@ -317,8 +320,6 @@ struct private_ike_sa_t {
 	/** PMTU socket */
 	int pmtu_sock;
 #endif
-
-
 
 	/**
 	 * Whether to follow IKEv2 redirects
@@ -3568,6 +3569,16 @@ METHOD(ike_sa_t, destroy, void,
 		vip->destroy(vip);
 	}
 
+#ifdef VOWIFI_CFG
+	vendor_response_data_t *data;
+
+	while (this->notifies->remove_first(this->notifies, &data) == SUCCESS)
+	{
+		data->destroy(data);
+	}
+	DESTROY_IF(this->notifies);
+#endif
+
 	/* unset SA after here to avoid usage by the listeners */
 	charon->bus->set_sa(charon->bus, NULL);
 
@@ -3741,6 +3752,82 @@ METHOD(ike_sa_t, set_dpd_interval, void,
 		this->peer_cfg->set_dpd_interval(this->peer_cfg, interval);
 	}
 }
+
+METHOD(ike_sa_t, process_vendor_notify, void,
+	private_ike_sa_t *this, int type, message_t *message)
+{
+	if (this->peer_cfg)
+	{
+		if (this->peer_cfg->is_vendor_notify_requested(this->peer_cfg, type))
+		{
+			notify_payload_t* notify = message->get_notify(message, type);
+			if (notify)
+			{
+				vendor_response_data_t *data = build_vendor_response_data(type,
+								notify->get_notification_data(notify));
+				this->notifies->insert_last(this->notifies, data);
+			}
+		}
+	}
+}
+
+METHOD(ike_sa_t, process_failed_notify, void*,
+	private_ike_sa_t *this, int type, message_t *message)
+{
+	vendor_response_data_t *data;
+	linked_list_t *list = NULL;
+
+	if (this->peer_cfg)
+	{
+		int requested = this->peer_cfg->get_next_vendor_notify_request(this->peer_cfg);
+		while (requested)
+		{
+			notify_payload_t* notify = message->get_notify(message, requested);
+			if (notify)
+			{
+				data = build_vendor_response_data(requested,
+								notify->get_notification_data(notify));
+				if (list == NULL)
+				{
+					list = linked_list_create();
+				}
+				list->insert_last(list, data);
+			}
+			requested = this->peer_cfg->get_next_vendor_notify_request(this->peer_cfg);
+		}
+		this->peer_cfg->rewind_vendor_notify_request_list(this->peer_cfg);
+	}
+	if (list && list->get_count(list) > 0)
+	{
+		data = build_empty_response_data();
+		list->insert_last(list, data);
+	}
+	return list;
+}
+
+METHOD(ike_sa_t, get_vendor_notifies, int,
+	private_ike_sa_t *this, linked_list_t *list)
+{
+	vendor_response_data_t *response;
+	int total = 0;
+
+	charon->bus->set_sa(charon->bus, &this->public);
+
+	/* remove from internal list and send to service */
+	while (this->notifies->remove_first(this->notifies, &response) == SUCCESS)
+	{
+		total += response->get_length(response);
+		list->insert_last(list, response);
+	}
+
+	if (list->get_count(list) > 0)
+	{
+		vendor_response_data_t *response = build_empty_response_data();
+		total += response->get_length(response);
+		list->insert_last(list, response);
+	}
+	return total;
+}
 #endif
 
 #ifdef VOWIFI_USE_TIMER
@@ -3890,6 +3977,9 @@ ike_sa_t * ike_sa_create(ike_sa_id_t *ike_sa_id, bool initiator,
 			.get_mtu = _get_mtu,
 			.get_configuration_attributes = _get_configuration_attributes,
 			.set_dpd_interval = _set_dpd_interval,
+			.process_vendor_notify = _process_vendor_notify,
+			.process_failed_notify = _process_failed_notify,
+			.get_vendor_notifies = _get_vendor_notifies,
 #endif
 #ifdef ME
 			.act_as_mediation_server = _act_as_mediation_server,
@@ -3944,6 +4034,7 @@ ike_sa_t * ike_sa_create(ike_sa_id_t *ike_sa_id, bool initiator,
 	this->vip_thread_started = FALSE;
 	this->tun = NULL;
 	this->mtu = 0;
+	this->notifies = linked_list_create();
 #endif
 #ifdef VOWIFI_PMTU_DISCOVERY
 	this->pmtu_sock = -1;

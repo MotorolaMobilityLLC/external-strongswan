@@ -133,22 +133,79 @@ void charon_send_initate_failure(stroke_msg_t *msg, int index)
 {
 	charon_response_t *res = create_response_msg(RES_INITIATE);
 	charon_error_code_t error = get_error_from_alerts(index);
+	linked_list_t *list = NULL;
 	int notify = 0;
-	int tmval = 0;
 
 	if (error == CHARON_ERR_NETWORK_FAILURE)
 	{
 		notify = get_alerts_notify(index);
-		tmval = get_alerts_timer(index);
+		list = get_alerts_vendor_container(index);
 	}
 	free_alerts_index(index);
 
 	push_string(&res, initiate.name, msg->initiate.name);
 	res->initiate.status = error;
 	res->initiate.notify = notify;
-	res->initiate.tmval = tmval;
+
+	if (list)
+	{
+		vendor_response_data_t *data;
+		int length = 0;
+
+		enumerator_t *enumerator = list->create_enumerator(list);
+		while (enumerator->enumerate(enumerator, &data))
+		{
+			length += data->get_length(data);
+		}
+		enumerator->destroy(enumerator);
+		if (length > 0)
+		{
+			char *mem = calloc(length + sizeof(int), 1);
+			char *tmp = mem + sizeof(int);
+
+			*((unsigned int*)mem) = length;
+
+			while (list->remove_first(list, &data) == SUCCESS)
+			{
+				tmp = data->pack(data, tmp);
+				data->destroy(data);
+			}
+			push_array(&res, initiate.notifies, mem, length + sizeof(int));
+			free(mem);
+		}
+		list->destroy(list);
+	}
+
 	fwrite(res, 1, res->length, msg->out);
 	free(res);
+}
+
+static char* get_notifies(ike_sa_t *ike_sa, int *total)
+{
+	linked_list_t *vendor_notifies = linked_list_create();
+	int length = ike_sa->get_vendor_notifies(ike_sa, vendor_notifies);
+
+	if (length)
+	{
+		vendor_response_data_t *notify;
+
+		char *mem = calloc(length + sizeof(int), 1);
+		char *tmp = mem + sizeof(int);
+
+		*((unsigned int*)mem) = length;
+
+		while (vendor_notifies->remove_first(vendor_notifies, &notify) == SUCCESS)
+		{
+			tmp = notify->pack(notify, tmp);
+			notify->destroy(notify);
+		}
+		vendor_notifies->destroy(vendor_notifies);
+
+		*total = length + sizeof(int);
+		return mem;
+	}
+	vendor_notifies->destroy(vendor_notifies);
+	return NULL;
 }
 
 static char* get_attributes(ike_sa_t *ike_sa, int *total)
@@ -251,26 +308,34 @@ void charon_send_initiate_success(stroke_msg_t *msg, int index)
 	{
 		if (streq(msg->initiate.name, ike_sa->get_name(ike_sa)))
 		{
-			char *attr = NULL;
+			char *data = NULL;
 			int length = 0;
 
 			push_string(&res, initiate.device, ike_sa->get_tun_name(ike_sa));
 			res->initiate.mtu = ike_sa->get_mtu(ike_sa);
 
 			/* Addresses */
-			attr = get_addresses(ike_sa, 4);
-			if (attr)
+			data = get_addresses(ike_sa, 4);
+			if (data)
 			{
-				push_string(&res, initiate.address, attr);
-				free(attr);
+				push_string(&res, initiate.address, data);
+				free(data);
 			}
 
 			/* attributes */
-			attr = get_attributes(ike_sa, &length);
-			if (attr)
+			data = get_attributes(ike_sa, &length);
+			if (data)
 			{
-				push_array(&res, initiate.attributes, attr, length);
-				free(attr);
+				push_array(&res, initiate.attributes, data, length);
+				free(data);
+			}
+
+			/* notifies */
+			data = get_notifies(ike_sa, &length);
+			if (data)
+			{
+				push_array(&res, initiate.notifies, data, length);
+				free(data);
 			}
 
 			/* end */
