@@ -63,16 +63,19 @@ vendor_request_list_t* build_vendor_request_list(char *buffer)
 	);
 	if (buffer != NULL)
 	{
-		unsigned int size = *((unsigned int*)buffer);
-		unsigned short *values = (unsigned short*)(buffer + sizeof(int));
+		typedef struct {
+			unsigned int count;
+			unsigned short values[0];
+		} packed_ushort_list_t;
 
-		if (size)
+		packed_ushort_list_t *request = (packed_ushort_list_t*)buffer;
+		if (request->count)
 		{
-			this->size = size / 2;
+			this->size = request->count;
 			this->values = calloc(this->size, sizeof(unsigned int));
 			for (int i = 0; i < this->size; i++)
 			{
-				this->values[i] = values[i] & 0xFFFF;
+				this->values[i] = request->values[i] & 0xFFFF;
 			}
 		}
 	}
