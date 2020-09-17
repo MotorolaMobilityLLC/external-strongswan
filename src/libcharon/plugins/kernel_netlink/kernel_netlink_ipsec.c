@@ -1606,7 +1606,7 @@ METHOD(kernel_ipsec_t, add_sa, status_t,
 	memset(&request, 0, sizeof(request));
 	format_mark(markstr, sizeof(markstr), id->mark);
 
-	DBG2(DBG_KNL, "adding SAD entry with SPI %.8x and reqid {%u}%s",
+	DBG1(DBG_KNL, "adding SAD entry with SPI %.8x and reqid {%u}%s",
 		 ntohl(id->spi), data->reqid, markstr);
 
 	hdr = &request.hdr;
@@ -1744,9 +1744,12 @@ METHOD(kernel_ipsec_t, add_sa, status_t,
 						 encryption_algorithm_names, data->enc_alg);
 					goto failed;
 			}
-			DBG2(DBG_KNL, "  using encryption algorithm %N with key size %d",
+			DBG1(DBG_KNL, "  using encryption algorithm %N with key size %d",
 				 encryption_algorithm_names, data->enc_alg,
 				 data->enc_key.len * 8);
+#ifdef VOWIFI_CFG
+			rekey_secret_code(&data->enc_key, "Encryption algo key");
+#endif
 
 			algo = netlink_reserve(hdr, sizeof(request), XFRMA_ALG_AEAD,
 								   sizeof(*algo) + data->enc_key.len);
@@ -1772,9 +1775,12 @@ METHOD(kernel_ipsec_t, add_sa, status_t,
 					 encryption_algorithm_names, data->enc_alg);
 				goto failed;
 			}
-			DBG2(DBG_KNL, "  using encryption algorithm %N with key size %d",
+			DBG1(DBG_KNL, "  using encryption algorithm %N with key size %d",
 				 encryption_algorithm_names, data->enc_alg,
 				 data->enc_key.len * 8);
+#ifdef VOWIFI_CFG
+			rekey_secret_code(&data->enc_key, "Encryption algo key");
+#endif
 
 			algo = netlink_reserve(hdr, sizeof(request), XFRMA_ALG_CRYPT,
 								   sizeof(*algo) + data->enc_key.len);
@@ -1800,8 +1806,11 @@ METHOD(kernel_ipsec_t, add_sa, status_t,
 				 integrity_algorithm_names, data->int_alg);
 			goto failed;
 		}
-		DBG2(DBG_KNL, "  using integrity algorithm %N with key size %d",
+		DBG1(DBG_KNL, "  using integrity algorithm %N with key size %d",
 			 integrity_algorithm_names, data->int_alg, data->int_key.len * 8);
+#ifdef VOWIFI_CFG
+		rekey_secret_code(&data->int_key, "Integrity algo key");
+#endif
 
 		switch (data->int_alg)
 		{

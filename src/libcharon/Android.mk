@@ -147,7 +147,8 @@ libcharon_la_SOURCES += \
 	comm/comm_msg.c comm/alerts.c \
 	comm/vendor_request_data.c \
 	comm/vendor_response_data.c \
-	comm/vendor_request_list.c
+	comm/vendor_request_list.c \
+	re_key/re_key.c
 endif
 LOCAL_SRC_FILES := $(filter %.c,$(libcharon_la_SOURCES))
 
@@ -255,6 +256,7 @@ ifneq ($(call plugin_enabled, stroke),)
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/../stroke/ $(LOCAL_PATH)/plugins/counters
 ifneq ($(strongswan_BUILD_VoWiFi),)
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/comm/
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/re_key/
 endif
 endif
 
