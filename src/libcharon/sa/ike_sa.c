@@ -3727,6 +3727,65 @@ METHOD(ike_sa_t, install_vip, void,
 	}
 }
 
+METHOD(ike_sa_t, interface_not_matched, bool,
+	private_ike_sa_t *this, host_t *address)
+{
+	return !is_address_on_interface(this, address);
+}
+
+METHOD(ike_sa_t, set_my_host_from_interface, void,
+	private_ike_sa_t *this, host_t *old)
+{
+	if (this->local_host && is_address_on_interface(this, this->local_host))
+	{
+		/* already found */
+		DBG1(DBG_IKE, "get from local host %H", this->local_host);
+		DESTROY_IF(this->my_host);
+		this->my_host = this->local_host->clone(this->local_host);
+		this->my_host->set_port(this->my_host, old->get_port(old));
+	}
+	else
+	{
+		/* find new */
+		enumerator_t *enumerator;
+		host_t *src = NULL, *addr;
+		int family = AF_UNSPEC;
+
+		switch (charon->socket->supported_families(charon->socket))
+		{
+			case SOCKET_FAMILY_IPV4:
+				family = AF_INET;
+				break;
+			case SOCKET_FAMILY_IPV6:
+				family = AF_INET6;
+				break;
+			case SOCKET_FAMILY_BOTH:
+			case SOCKET_FAMILY_NONE:
+				break;
+		}
+		enumerator = create_peer_address_enumerator(this);
+		while (enumerator->enumerate(enumerator, &addr))
+		{
+			if (family != AF_UNSPEC && addr->get_family(addr) != family)
+			{
+				continue;
+			}
+			src = charon->kernel->get_source_addr(charon->kernel, addr, NULL);
+			if (src && is_address_on_interface(this, src))
+			{
+				DBG1(DBG_IKE, "found new souce %H", src);
+
+				DESTROY_IF(this->my_host);
+				this->my_host = src->clone(src);
+				this->my_host->set_port(this->my_host, old->get_port(old));
+				break;
+			}
+			src = NULL;
+		}
+		enumerator->destroy(enumerator);
+	}
+}
+
 METHOD(ike_sa_t, get_tun_name, char*,
 	private_ike_sa_t *this)
 {
@@ -3973,6 +4032,8 @@ ike_sa_t * ike_sa_create(ike_sa_id_t *ike_sa_id, bool initiator,
 			.is_terminated_from_service = _get_terminate,
 			.install_vip = _install_vip,
 			.wait_for_installed_vip = _wait_for_installed_vip,
+			.interface_not_matched = _interface_not_matched,
+			.set_my_host_from_interface = _set_my_host_from_interface,
 			.get_tun_name = _get_tun_name,
 			.get_mtu = _get_mtu,
 			.get_configuration_attributes = _get_configuration_attributes,

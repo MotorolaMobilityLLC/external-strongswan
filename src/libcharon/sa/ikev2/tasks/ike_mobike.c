@@ -606,6 +606,15 @@ METHOD(task_t, process_i, status_t,
 				this->update = TRUE;
 				this->ike_sa->set_other_host(this->ike_sa, other_new->clone(other_new));
 			}
+#ifdef VOWIFI_CFG
+			if (!this->update && this->ike_sa->interface_not_matched(this->ike_sa, me_new))
+			{
+				this->update = TRUE;
+
+				DBG1(DBG_IKE, "update address by interface");
+				this->ike_sa->set_my_host_from_interface(this->ike_sa, me_new);
+			}
+#endif
 			if (this->update)
 			{
 				/* use the same task to ... */

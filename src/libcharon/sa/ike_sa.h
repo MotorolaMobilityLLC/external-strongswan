@@ -1241,6 +1241,12 @@ struct ike_sa_t {
 	void (*wait_for_installed_vip)(ike_sa_t *this);
 
 	/**
+	* MOBIKE enhancements
+	*/
+	bool (*interface_not_matched)(ike_sa_t *this, host_t *address);
+	void (*set_my_host_from_interface)(ike_sa_t *this, host_t *address);
+
+	/**
 	 * Get virtual device name
 	 */
 	char* (*get_tun_name)(ike_sa_t *this);
