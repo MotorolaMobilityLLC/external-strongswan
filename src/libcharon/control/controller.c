@@ -569,6 +569,27 @@ METHOD(job_t, terminate_ike_execute, job_requeue_t,
 	listener->ike_sa = ike_sa;
 	listener->lock->unlock(listener->lock);
 
+#ifdef VOWIFI_CFG
+        char *iface;
+        if (charon->kernel->get_interface(charon->kernel, ike_sa->get_my_host(ike_sa), &iface))
+      	{
+		DBG1(DBG_KNL, "HOST_IP %H is on interface %s", ike_sa->get_my_host(ike_sa), iface);
+        }
+	else
+      	{
+		DBG1(DBG_KNL, "%H is not present on any interface. Deleting IKE_SA %s[%d] without sending message to server.", 
+						ike_sa->get_my_host(ike_sa), ike_sa->get_name(ike_sa), ike_sa->get_unique_id(ike_sa));
+
+		if (ike_sa->get_state(ike_sa) == IKE_ESTABLISHED)
+		{
+			ike_sa->set_state(ike_sa, IKE_DELETING);
+		}
+
+		charon->bus->ike_updown(charon->bus, ike_sa, FALSE);
+		charon->ike_sa_manager->checkin_and_destroy(charon->ike_sa_manager,ike_sa);
+		return JOB_REQUEUE_NONE;
+        }
+#endif
 	if (ike_sa->delete(ike_sa, listener->options.force) != DESTROY_ME)
 	{	/* delete queued */
 		listener->status = FAILED;
