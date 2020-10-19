@@ -3126,6 +3126,36 @@ static bool is_any_path_valid(private_ike_sa_t *this)
 	return valid;
 }
 
+#ifdef VOWIFI_CFG
+static status_t rekey_childs(private_ike_sa_t *this)
+{
+	enumerator_t *enumerator;
+	child_sa_t *child_sa;
+	linked_list_t *vips;
+
+	vips = linked_list_create_from_enumerator(array_create_enumerator(this->my_vips));
+
+	enumerator = array_create_enumerator(this->child_sas);
+	while (enumerator->enumerate(enumerator, &child_sa))
+	{
+		charon->child_sa_manager->remove(charon->child_sa_manager, child_sa);
+		charon->child_sa_manager->add(charon->child_sa_manager, child_sa, &this->public);
+
+		/* update policies */
+		child_sa->update(child_sa, this->my_host, this->other_host,
+					vips, has_condition(this, COND_NAT_ANY));
+
+		/* rekey */
+		rekey_child_sa(this, child_sa->get_protocol(child_sa),
+					child_sa->get_spi(child_sa, TRUE));
+	}
+	enumerator->destroy(enumerator);
+
+	vips->destroy(vips);
+	return SUCCESS;
+}
+#endif
+
 METHOD(ike_sa_t, roam, status_t,
 	private_ike_sa_t *this, bool address)
 {
@@ -3223,19 +3253,24 @@ METHOD(ike_sa_t, roam, status_t,
 		set_condition(this, COND_STALE, TRUE);
 		return SUCCESS;
 	}
-	/* since our previous path is not valid anymore, try and find a new one */
-	resolve_hosts(this);
-
 #ifdef VOWIFI_CFG
+	if (this->local_host && !this->my_host->ip_equals(this->my_host, this->local_host))
+	{
+		host_t *host = this->local_host->clone(this->local_host);
+		host->set_port(host, this->my_host->get_port(this->my_host));
+		set_my_host(this, host);
+	}
 	if (this->peer_cfg)
 	{
 		if (this->peer_cfg->is_rekey_preferred(this->peer_cfg))
 		{
-			DBG1(DBG_IKE, "rekeying IKE_SA due to address change");
-			return rekey(this);
+			DBG1(DBG_IKE, "rekey CHILD_SA due to address change");
+			return rekey_childs(this);
 		}
 	}
 #endif
+	/* since our previous path is not valid anymore, try and find a new one */
+	resolve_hosts(this);
 
 	DBG1(DBG_IKE, "reauthenticating IKE_SA due to address change");
 	return reauth(this);
