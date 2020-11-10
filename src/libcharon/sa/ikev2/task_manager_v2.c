@@ -379,6 +379,11 @@ METHOD(task_manager_t, retransmit, status_t,
 					base = peer_cfg->get_retransmit_base(peer_cfg);
 					max_tries = peer_cfg->get_retransmit_retries(peer_cfg);
 				}
+				/* reset values if deleting */
+				if (this->ike_sa->is_terminated_from_service(this->ike_sa))
+				{
+					max_tries = 1;
+				}
 			}
 			DBG1(DBG_IKE, "Retries: %d, range: %d\n", this->initiating.retransmitted, max_tries);
 
