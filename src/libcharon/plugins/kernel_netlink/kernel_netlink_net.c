@@ -536,6 +536,13 @@ struct private_kernel_netlink_net_t {
 	 * MSS to set on installed routes
 	 */
 	uint32_t mss;
+
+#ifdef VOWIFI_CFG
+	/**
+	* Internal interface index
+	*/
+	int interface_index;
+#endif
 };
 
 /**
@@ -2673,6 +2680,91 @@ METHOD(kernel_net_t, del_ip, status_t,
 	return SUCCESS;
 }
 
+#ifdef VOWIFI_CFG
+
+#define INTERFACE_INDEX_START	10
+#define INFO_KIND_MAX_LENGTH	8
+
+METHOD(kernel_net_t, create_interface, status_t,
+	private_kernel_netlink_net_t *this, char *iface_template, char* iface_buffer)
+{
+	netlink_buf_t request;
+	struct nlmsghdr *hdr;
+	chunk_t chunk;
+	char name[IFNAMSIZ];
+	void *attr_outer, *attr_inner;
+	uint32_t index; uint32_t link = 1;
+	status_t res;
+
+	memset(&request, 0, sizeof(request));
+
+	this->lock->write_lock(this->lock);
+	if (this->interface_index < INTERFACE_INDEX_START)
+		this->interface_index = INTERFACE_INDEX_START;
+
+	index = this->interface_index++;
+	snprintf(name, IFNAMSIZ, iface_template, index);
+	this->lock->unlock(this->lock);
+
+	hdr = &request.hdr;
+	hdr->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK | NLM_F_CREATE | NLM_F_EXCL;
+	hdr->nlmsg_type = RTM_NEWLINK;
+	hdr->nlmsg_len = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+
+	chunk = chunk_alloc(IFNAMSIZ);
+	memcpy(chunk.ptr, name, IFNAMSIZ);
+	netlink_add_attribute(hdr, IFLA_IFNAME, chunk, sizeof(request));
+	chunk_free(&chunk);
+
+	attr_outer = netlink_nested_start(hdr, sizeof(request), IFLA_LINKINFO);
+	chunk = chunk_alloc(INFO_KIND_MAX_LENGTH);
+	strncpy(chunk.ptr, "xfrm", INFO_KIND_MAX_LENGTH);
+	netlink_add_attribute(hdr, IFLA_INFO_KIND, chunk, sizeof(request));
+	chunk_free(&chunk);
+	attr_inner = netlink_nested_start(hdr, sizeof(request), IFLA_INFO_DATA);
+	chunk = chunk_from_thing(link);
+	netlink_add_attribute(hdr, IFLA_XFRM_LINK, chunk, sizeof(request));
+	chunk = chunk_from_thing(index);
+	netlink_add_attribute(hdr, IFLA_XFRM_IF_ID, chunk, sizeof(request));
+	netlink_nested_end(hdr, attr_inner);
+	netlink_nested_end(hdr, attr_outer);
+
+	res = this->socket->send_ack(this->socket, hdr);
+	if ((res == SUCCESS) && iface_buffer)
+	{
+		strcpy(iface_buffer, name);
+	}
+	return res;
+}
+
+METHOD(kernel_net_t, remove_interface, status_t,
+	private_kernel_netlink_net_t *this, char *iface_name)
+{
+	netlink_buf_t request;
+	struct nlmsghdr *hdr;
+	chunk_t chunk;
+
+	memset(&request, 0, sizeof(request));
+
+	hdr = &request.hdr;
+	hdr->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
+	hdr->nlmsg_type = RTM_DELLINK;
+	hdr->nlmsg_len = NLMSG_LENGTH(sizeof(struct ifinfomsg));
+
+	chunk = chunk_alloc(strlen(iface_name) + 1);
+	strncpy(chunk.ptr, iface_name, chunk.len);
+	netlink_add_attribute(hdr, IFLA_IFNAME, chunk, sizeof(request));
+	chunk_free(&chunk);
+
+	this->lock->write_lock(this->lock);
+	if (--this->interface_index < INTERFACE_INDEX_START)
+		this->interface_index = INTERFACE_INDEX_START;
+	this->lock->unlock(this->lock);
+
+	return this->socket->send_ack(this->socket, hdr);
+}
+#endif
+
 /**
  * Manages source routes in the routing table.
  * By setting the appropriate nlmsg_type, the route gets added or removed.
@@ -3204,6 +3296,10 @@ kernel_netlink_net_t *kernel_netlink_net_create()
 				.del_ip = _del_ip,
 				.add_route = _add_route,
 				.del_route = _del_route,
+#ifdef VOWIFI_CFG
+				.create_interface = _create_interface,
+				.remove_interface = _remove_interface,
+#endif
 				.destroy = _destroy,
 			},
 		},

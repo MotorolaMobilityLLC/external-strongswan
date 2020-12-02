@@ -1001,6 +1001,28 @@ METHOD(kernel_interface_t, destroy, void,
 	free(this);
 }
 
+#ifdef VOWIFI_CFG
+METHOD(kernel_interface_t, create_interface, status_t,
+	private_kernel_interface_t *this, char *iface_template, char* iface_buffer)
+{
+	if (!this->net || !this->net->create_interface)
+	{
+		return NOT_SUPPORTED;
+	}
+	return this->net->create_interface(this->net, iface_template, iface_buffer);
+}
+
+METHOD(kernel_interface_t, remove_interface, status_t,
+	private_kernel_interface_t *this, char *iface)
+{
+	if (!this->net || !this->net->remove_interface)
+	{
+		return NOT_SUPPORTED;
+	}
+	return this->net->remove_interface(this->net, iface);
+}
+#endif
+
 /*
  * Described in header-file
  */
@@ -1036,6 +1058,10 @@ kernel_interface_t *kernel_interface_create()
 			.del_route = _del_route,
 			.bypass_socket = _bypass_socket,
 			.enable_udp_decap = _enable_udp_decap,
+#ifdef VOWIFI_CFG
+			.create_interface = _create_interface,
+			.remove_interface = _remove_interface,
+#endif
 
 			.is_interface_usable = _is_interface_usable,
 			.all_interfaces_usable = _all_interfaces_usable,

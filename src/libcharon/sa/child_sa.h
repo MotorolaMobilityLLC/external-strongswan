@@ -507,6 +507,11 @@ struct child_sa_t {
 	 */
 	status_t (*update)(child_sa_t *this, host_t *me, host_t *other,
 					   linked_list_t *vips, bool encap);
+
+#ifdef VOWIFI_CFG
+	void (*set_if_id)(child_sa_t *this, int in, int out);
+#endif
+
 	/**
 	 * Destroys a child_sa.
 	 */

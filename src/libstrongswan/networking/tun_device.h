@@ -114,6 +114,10 @@ struct tun_device_t {
 	 */
 	int (*get_fd)(tun_device_t *this);
 
+#ifdef VOWIFI_CFG
+	bool (*is_xfrm_device)(tun_device_t *this);
+#endif
+
 	/**
 	 * Destroy a tun_device_t
 	 */
@@ -127,5 +131,9 @@ struct tun_device_t {
  * @return					TUN device
  */
 tun_device_t *tun_device_create(const char *name_tmpl);
+
+#ifdef VOWIFI_CFG
+tun_device_t *xfrm_device_create(const char *name);
+#endif
 
 #endif /** TUN_DEVICE_H_ @}*/

@@ -719,6 +719,15 @@ static status_t select_and_install(private_child_create_t *this,
 	this->child_sa->set_mode(this->child_sa, this->mode);
 	this->child_sa->set_protocol(this->child_sa,
 								 this->proposal->get_protocol(this->proposal));
+#ifdef VOWIFI_CFG
+	if (this->ike_sa->is_xfrm_interface_used(this->ike_sa))
+	{
+		/* update XFRM device ID to child */
+		this->child_sa->set_if_id(this->child_sa, 
+				this->ike_sa->get_if_id(this->ike_sa, TRUE), 
+				this->ike_sa->get_if_id(this->ike_sa, FALSE));
+	}
+#endif
 
 	if (this->my_cpi == 0 || this->other_cpi == 0 || this->ipcomp == IPCOMP_NONE)
 	{

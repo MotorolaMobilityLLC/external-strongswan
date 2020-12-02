@@ -186,6 +186,16 @@ struct kernel_net_t {
 						   uint8_t prefixlen, host_t *gateway, host_t *src_ip,
 						   char *if_name);
 
+#ifdef VOWIFI_CFG
+	/**
+	*
+	* Create and delete XFRM interfaces
+	*
+	*/
+	status_t (*create_interface)(kernel_net_t *this, char *name_template, char* name_buffer);
+	status_t (*remove_interface)(kernel_net_t *this, char *if_name);
+#endif
+
 	/**
 	 * Destroy the implementation.
 	 */

@@ -1272,6 +1272,11 @@ struct ike_sa_t {
 	void (*process_vendor_notify)(ike_sa_t *this, int type, message_t *message);
 	void* (*process_failed_notify)(ike_sa_t *this, int type, message_t *message);
 	int (*get_vendor_notifies)(ike_sa_t *this, linked_list_t *list);
+
+	/**
+	* TRUE if XFRM device was used
+	*/
+	bool (*is_xfrm_interface_used)(ike_sa_t *this);
 #endif
 };
 

@@ -102,6 +102,8 @@ struct private_tun_device_t {
 	 * Associated addresses
 	 */
 	linked_list_t* addresses;
+
+	bool is_xfrm_device;
 #else
 	/**
 	 * Associated address
@@ -573,6 +575,14 @@ static bool init_tun(private_tun_device_t *this, const char *name_tmpl)
 #endif /* !__APPLE__ */
 }
 
+#ifdef VOWIFI_CFG
+METHOD(tun_device_t, is_xfrm_device, bool,
+	private_tun_device_t *this)
+{
+	return this->is_xfrm_device;
+}
+#endif
+
 /*
  * Described in header
  */
@@ -593,6 +603,7 @@ tun_device_t *tun_device_create(const char *name_tmpl)
 			.get_address = _get_address,
 #else
 			.create_addresses_enumerator = _create_addresses_enumerator,
+			.is_xfrm_device = _is_xfrm_device,
 #endif
 			.up = _up,
 			.destroy = _destroy,
@@ -619,5 +630,43 @@ tun_device_t *tun_device_create(const char *name_tmpl)
 	}
 	return &this->public;
 }
+
+#ifdef VOWIFI_CFG
+tun_device_t *xfrm_device_create(const char *name)
+{
+	private_tun_device_t *this;
+
+	INIT(this,
+		.public = {
+			.read_packet = _read_packet,
+			.write_packet = _write_packet,
+			.get_mtu = _get_mtu,
+			.set_mtu = _set_mtu,
+			.get_name = _get_name,
+			.get_fd = _get_fd,
+			.set_address = _set_address,
+			.create_addresses_enumerator = _create_addresses_enumerator,
+			.is_xfrm_device = _is_xfrm_device,
+			.up = _up,
+			.destroy = _destroy,
+		},
+		.tunfd = -1,
+		.sock = -1,
+	);
+	strncpy(this->if_name, name, IFNAMSIZ);
+	this->addresses = linked_list_create();
+	this->is_xfrm_device = TRUE;
+
+	DBG1(DBG_LIB, "created XFRM device: %s", this->if_name);
+	this->sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (this->sock < 0)
+	{
+		DBG1(DBG_LIB, "failed to open socket to configure TUN device");
+		destroy(this);
+		return NULL;
+	}
+	return &this->public;
+}
+#endif
 
 #endif /* TUN devices supported */

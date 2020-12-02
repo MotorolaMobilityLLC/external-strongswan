@@ -730,6 +730,15 @@ METHOD(child_sa_t, get_if_id, uint32_t,
 	return inbound ? this->if_id_in : this->if_id_out;
 }
 
+#ifdef VOWIFI_CFG
+METHOD(child_sa_t, set_if_id, void,
+	private_child_sa_t *this, int in, int out)
+{
+	this->if_id_in = in;
+	this->if_id_out = out;
+}
+#endif
+
 METHOD(child_sa_t, get_lifetime, time_t,
 	   private_child_sa_t *this, bool hard)
 {
@@ -1839,6 +1848,9 @@ child_sa_t *child_sa_create(host_t *me, host_t *other, child_cfg_t *config,
 			.install_policies = _install_policies,
 			.create_ts_enumerator = _create_ts_enumerator,
 			.create_policy_enumerator = _create_policy_enumerator,
+#ifdef VOWIFI_CFG
+			.set_if_id = _set_if_id,
+#endif
 			.destroy = _destroy,
 		},
 		.encap = data->encap,

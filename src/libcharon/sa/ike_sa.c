@@ -1322,6 +1322,8 @@ METHOD(ike_sa_t, add_virtual_ip, void,
 
 		if (this->tun == NULL)
 		{
+			char name[32];
+
 			int mtu = 0;
 #ifdef VOWIFI_PMTU_DISCOVERY
 			mtu = pmtu_discovery_stage2(this);
@@ -1330,7 +1332,17 @@ METHOD(ike_sa_t, add_virtual_ip, void,
 			{
 				mtu = TUN_DEFAULT_MTU;
 			}
-			this->tun = tun_device_create("epdg%d");
+			if (charon->kernel->create_interface(charon->kernel, "epdg%d", name) == SUCCESS)
+			{
+				sscanf(name, "epdg%d", &this->if_id_in);
+				this->if_id_out = this->if_id_in;
+
+				this->tun = xfrm_device_create(name);
+			}
+			else
+			{
+				this->tun = tun_device_create("epdg%d");
+			}
 			if (!this->tun)
 			{
 				DBG1(DBG_IKE, "failed to create TUN device");
@@ -1345,6 +1357,11 @@ METHOD(ike_sa_t, add_virtual_ip, void,
 			if (!this->tun->set_mtu(this->tun, mtu))
 			{
 				DBG1(DBG_IKE, "failed to configure TUN device");
+				if (this->tun->is_xfrm_device(this->tun))
+				{
+					charon->kernel->remove_interface(charon->kernel,
+								this->tun->get_name(this->tun));
+				}
 				this->tun->destroy(this->tun);
 				this->tun = NULL;
 				return;
@@ -1352,6 +1369,11 @@ METHOD(ike_sa_t, add_virtual_ip, void,
 			if (!this->tun->up(this->tun))
 			{
 				DBG1(DBG_IKE, "failed to up TUN device");
+				if (this->tun->is_xfrm_device(this->tun))
+				{
+					charon->kernel->remove_interface(charon->kernel,
+								this->tun->get_name(this->tun));
+				}
 				this->tun->destroy(this->tun);
 				this->tun = NULL;
 				return;
@@ -1372,6 +1394,11 @@ METHOD(ike_sa_t, add_virtual_ip, void,
 			if (charon->kernel->add_ip(charon->kernel, ip, -1, this->tun->get_name(this->tun)) != SUCCESS)
 			{
 				DBG1(DBG_IKE, "failed to set ip to TUN device");
+				if (this->tun->is_xfrm_device(this->tun))
+				{
+					charon->kernel->remove_interface(charon->kernel,
+								this->tun->get_name(this->tun));
+				}
 				this->tun->destroy(this->tun);
 				this->tun = NULL;
 				return;
@@ -1433,6 +1460,11 @@ METHOD(ike_sa_t, clear_virtual_ips, void,
 		{
 #ifdef VOWIFI_CFG
 			if (this->tun) {
+				if (this->tun->is_xfrm_device(this->tun))
+				{
+					charon->kernel->remove_interface(charon->kernel,
+								this->tun->get_name(this->tun));
+				}
 				this->tun->destroy(this->tun);
 			}
 			this->tun = NULL;
@@ -3577,6 +3609,11 @@ METHOD(ike_sa_t, destroy, void,
 	{
 #ifdef VOWIFI_CFG
 		if (this->tun) {
+			if (this->tun->is_xfrm_device(this->tun))
+			{
+				charon->kernel->remove_interface(charon->kernel,
+								this->tun->get_name(this->tun));
+			}
 			this->tun->destroy(this->tun);
 		}
 		this->tun = NULL;
@@ -3922,6 +3959,15 @@ METHOD(ike_sa_t, get_vendor_notifies, int,
 	}
 	return total;
 }
+
+METHOD(ike_sa_t, is_xfrm_interface_used, bool, private_ike_sa_t *this)
+{
+	if (this->tun)
+	{
+		return this->tun->is_xfrm_device(this->tun);
+	}
+	return FALSE;
+}
 #endif
 
 #ifdef VOWIFI_USE_TIMER
@@ -4076,6 +4122,7 @@ ike_sa_t * ike_sa_create(ike_sa_id_t *ike_sa_id, bool initiator,
 			.process_vendor_notify = _process_vendor_notify,
 			.process_failed_notify = _process_failed_notify,
 			.get_vendor_notifies = _get_vendor_notifies,
+			.is_xfrm_interface_used = _is_xfrm_interface_used,
 #endif
 #ifdef ME
 			.act_as_mediation_server = _act_as_mediation_server,

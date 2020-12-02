@@ -594,6 +594,16 @@ struct kernel_interface_t {
 							 transform_type_t type, uint16_t *kernel_id,
 							 char **kernel_name);
 
+#ifdef VOWIFI_CFG
+	/**
+	*
+	* Create and delete XFRM interfaces
+	*
+	*/
+	status_t (*create_interface)(kernel_interface_t *this, char *name_template, char* name_buf);
+	status_t (*remove_interface)(kernel_interface_t *this, char *if_name);
+#endif
+
 	/**
 	 * Destroys a kernel_interface_t object.
 	 */
