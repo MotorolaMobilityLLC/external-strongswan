@@ -653,7 +653,7 @@ tun_device_t *xfrm_device_create(const char *name)
 		.tunfd = -1,
 		.sock = -1,
 	);
-	strncpy(this->if_name, name, IFNAMSIZ);
+	strncpy(this->if_name, name, IFNAMSIZ - 1);
 	this->addresses = linked_list_create();
 	this->is_xfrm_device = TRUE;
 
