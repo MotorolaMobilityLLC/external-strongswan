@@ -232,9 +232,11 @@ static void send_alert_event(ike_sa_t *ike_sa, alert_t alert)
 */
 		case ALERT_LOCAL_AUTH_FAILED:
 			/* re-authentication failed */
+			charon_send_terminated_indication(name);
+			break;
 		case ALERT_RETRANSMIT_SEND_TIMEOUT:
 			/* re-transmit failed */
-			charon_send_terminated_indication(name);
+			charon_send_terminated_indication_with_cause(name, CAUSE_TIMEOUT);
 			break;
 		default:
 			DBG1(DBG_CFG,"Alert %d ignored. Do not send notification to service", alert);

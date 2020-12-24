@@ -392,6 +392,21 @@ void charon_send_terminated_indication(char* name)
 {
 	charon_response_t *ind = create_response_msg(IND_TERMINATED);
 	push_string(&ind, ind_terminated.name, name);
+	ind->ind_terminated.cause = CAUSE_NORMAL;
+
+	int sock = send_message(ind, ind->length);
+	if (sock > 0)
+	{
+		close(sock);
+	}
+	free(ind);
+}
+
+void charon_send_terminated_indication_with_cause(char* name, int cause)
+{
+	charon_response_t *ind = create_response_msg(IND_TERMINATED);
+	push_string(&ind, ind_terminated.name, name);
+	ind->ind_terminated.cause = cause;
 
 	int sock = send_message(ind, ind->length);
 	if (sock > 0)

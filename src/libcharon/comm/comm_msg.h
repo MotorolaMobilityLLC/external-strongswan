@@ -65,6 +65,11 @@ typedef enum {
         AUTH_SYNC_FAIL,
 } sim_auth_resp_code_t;
 
+typedef enum {
+	CAUSE_NORMAL,
+	CAUSE_TIMEOUT
+} charon_termination_cause_t;
+
 typedef struct
 {
 	unsigned short length;
@@ -94,6 +99,7 @@ typedef struct
 
 		struct {
 			char *name;
+			charon_termination_cause_t cause;
 		} ind_terminated;
 
 		struct {
